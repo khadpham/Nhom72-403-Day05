@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check-in Online | NEO Vietnam Airlines</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="checkin-page-body">
+  <div class="checkin-page-shell">
+    <header class="checkin-header">
+      <div>
+        <h1>Check-in Online Vietnam Airlines</h1>
+        <p>Thiết kế mock UI trực quan với sơ đồ 6 ghế/hàng từ dataset trong thư mục mock_data.</p>
+      </div>
+      <button class="back-home-btn" id="checkin-back-btn">← Quay lại NEO Chat</button>
+    </header>
+
+    <section class="checkin-layout">
+      <aside class="checkin-panel">
+        <h2>Làm thủ tục trực tuyến</h2>
+
+        <form class="checkin-form" id="checkin-form">
+          <label>
+            Mã đặt chỗ (PNR)
+            <input id="pnr-input" type="text" maxlength="10" placeholder="Ví dụ: NHG8IQ" required />
+          </label>
+
+          <label>
+            Họ hành khách (tuỳ chọn)
+            <input id="surname-input" type="text" maxlength="64" placeholder="Ví dụ: PHAM" />
+          </label>
+
+          <button type="submit" class="checkin-action-btn">Tra cứu sơ đồ ghế</button>
+        </form>
+
+        <p class="checkin-hint">
+          Sau khi xác nhận đúng PNR, hệ thống sẽ hiển thị sơ đồ ghế theo mô hình A-B-C | D-E-F để bạn chọn trực quan.
+        </p>
+
+        <div id="checkin-alert" class="checkin-alert info">
+          Hãy nhập mã PNR để bắt đầu tra cứu check-in.
+        </div>
+
+        <div id="checkin-result" class="checkin-result-box" style="display:none"></div>
+        <div id="service-feedback-slot" class="checkin-feedback-slot" style="display:none"></div>
+      </aside>
+
+      <main class="seatmap-panel">
+        <h2>Chọn ghế máy bay</h2>
+
+        <div id="seatmap-empty" class="ticket-empty">
+          Chưa có dữ liệu. Vui lòng nhập PNR hợp lệ để tải sơ đồ ghế.
+        </div>
+
+        <div id="seatmap-content" style="display:none">
+          <div class="seatmap-summary" id="seatmap-summary"></div>
+
+          <div class="seatmap-legend">
+            <span class="legend-item"><i class="legend-dot selectable"></i>Ghế có thể chọn</span>
+            <span class="legend-item"><i class="legend-dot selected"></i>Ghế đang chọn</span>
+            <span class="legend-item"><i class="legend-dot current"></i>Ghế hiện tại của PNR</span>
+            <span class="legend-item"><i class="legend-dot occupied"></i>Ghế đã có người</span>
+          </div>
+
+          <div class="seatmap-cabin">
+            <div class="seatmap-headline">Mũi máy bay ✈</div>
+            <div class="seatmap-grid" id="seatmap-grid"></div>
+          </div>
+
+          <div class="seatmap-selected-box" id="seatmap-selected-box">
+            Bạn chưa chọn ghế check-in.
+          </div>
+
+          <button id="confirm-seat-btn" class="checkin-confirm-btn" disabled>
+            Xác nhận check-in với ghế đã chọn
+          </button>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <script src="js/checkin.js"></script>
+</body>
+</html>
