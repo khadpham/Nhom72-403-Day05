@@ -1,0 +1,16 @@
+﻿customer_id,full_name,passport_number,email
+CUST_001,TRAN HUNG,F91846634,hung.tran@email.com
+CUST_002,TRAN DUNG,E24601158,dung.tran@email.com
+CUST_003,VU ANH,E67860543,anh.vu@email.com
+CUST_004,TRAN ANH,B48309592,anh.tran@email.com
+CUST_005,VU NAM,H66203114,nam.vu@email.com
+CUST_006,LE ANH,A79396099,anh.le@email.com
+CUST_007,VU DUNG,H37298214,dung.vu@email.com
+CUST_008,NGUYEN ANH,A38147452,anh.nguyen@email.com
+CUST_009,TRAN NAM,A58554417,nam.tran@email.com
+CUST_010,PHAM NAM,A72595120,nam.pham@email.com
+CUST_011,PHAM MINH,B66596382,minh.pham@email.com
+CUST_012,HOANG LINH,F96106230,linh.hoang@email.com
+CUST_013,VU ANH,C36992719,anh.vu@email.com
+CUST_014,TRAN ANH,D95708744,anh.tran@email.com
+CUST_015,BINH,G37931095,binh@email.com

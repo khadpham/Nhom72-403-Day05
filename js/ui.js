@@ -581,11 +581,11 @@ const UI = {
     widget.innerHTML = `
       <div class="escalation-header">
         <span>👤</span>
-        <span>Kết nối với nhân viên hỗ trợ</span>
+        <span>Kết nối với tư vấn viên</span>
       </div>
-      <p>Tôi đã chuyển yêu cầu của bạn đến nhân viên tổng đài. Thời gian chờ dự kiến: <strong>~3 phút</strong>.</p>
+      <p>Yêu cầu này cần tư vấn viên hỗ trợ trực tiếp. Đây là nút demo để chuyển sang tư vấn viên.</p>
       <div class="escalation-options">
-        <button class="esc-btn" onclick="alert('Demo: Mở Live Chat với tổng đài viên')">💬 Chat với nhân viên</button>
+        <button class="esc-btn" onclick="alert('Demo: Mở Chat với tư vấn viên')">💬 Chat với tư vấn viên</button>
         <button class="esc-btn" onclick="alert('Demo: Gọi 1900 1100')">📞 Gọi 1900 1100</button>
       </div>
     `;

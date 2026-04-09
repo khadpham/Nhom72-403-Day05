@@ -1,0 +1,151 @@
+﻿chat_id,customer_id,message,timestamp,sentiment
+CH_0001,CUST_001,Đi Đà Nẵng thì hộ chiếu còn hạn bao lâu là được bạn nhỉ?,2026-04-09 02:01:00,Neutral
+CH_0002,CUST_014,Tư vấn giúp mình hành trình từ Đà Nẵng đi Sydney giá tốt nhất cho đoàn khách 5 người.,2026-04-02 03:28:00,Neutral
+CH_0003,CUST_015,Bên bạn còn chuyến bay nào của Qantas đi TP.HCM sáng sớm không?,2026-04-11 15:14:00,Neutral
+CH_0004,CUST_003,Cho mình hỏi thủ tục mang thú cưng lên máy bay đi Tokyo nhé.,2026-04-10 13:52:00,Neutral
+CH_0005,CUST_011,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế hàng thoát hiểm không?",2026-04-06 13:46:00,Positive
+CH_0006,CUST_010,Cho mình hỏi thủ tục mang thú cưng lên máy bay đi Bangkok nhé.,2026-04-02 14:39:00,Neutral
+CH_0007,CUST_013,Hạng vé Economy của VietJet Air có được mang theo 20kg hành lý ký gửi không?,2026-04-07 06:15:00,Neutral
+CH_0008,CUST_002,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế hàng thoát hiểm không?",2026-04-03 03:07:00,Positive
+CH_0009,CUST_015,Cho mình hỏi hạng Economy đi Đà Nẵng có được vào phòng chờ thương gia không?,2026-04-05 16:36:00,Neutral
+CH_0010,CUST_013,Hạng vé Economy của VietJet Air có được mang theo 20kg hành lý ký gửi không?,2026-04-10 06:40:00,Neutral
+CH_0011,CUST_010,"Hành lý của tôi bị hỏng sau chuyến bay Qantas, tôi cần gặp ai để giải quyết?",2026-04-02 01:34:00,Negative
+CH_0012,CUST_006,"Sắp tới mình bay đi Seoul, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-06 05:42:00,Neutral
+CH_0013,CUST_011,Vé máy bay đi Hong Kong hạng Business ngày 24/04/2026 còn không bạn?,2026-04-07 19:02:00,Neutral
+CH_0014,CUST_003,"Vừa bay về từ Singapore, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-03 08:36:00,Positive
+CH_0015,CUST_005,Hạng vé Economy của VietJet Air có được mang theo 20kg hành lý ký gửi không?,2026-04-09 20:55:00,Neutral
+CH_0016,CUST_013,Bên bạn còn chuyến bay nào của Cathay Pacific đi Singapore sáng sớm không?,2026-04-11 06:18:00,Neutral
+CH_0017,CUST_009,"Vừa bay về từ Hong Kong, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-03 04:20:00,Positive
+CH_0018,CUST_013,Chuyến bay từ Hà Nội đi Đà Nẵng có yêu cầu giấy tờ đặc biệt gì không?,2026-04-04 18:14:00,Neutral
+CH_0019,CUST_010,Rất hài lòng với cách phục vụ của Vietnam Airlines trên chuyến bay hôm qua.,2026-04-01 02:04:00,Positive
+CH_0020,CUST_001,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế hàng thoát hiểm không?",2026-04-08 04:40:00,Positive
+CH_0021,CUST_011,Tại sao chuyến bay VN780 lại bị hoãn tận 3 tiếng mà không thông báo trước vậy?,2026-04-08 22:07:00,Negative
+CH_0022,CUST_011,Cho mình hỏi thủ tục mang thú cưng lên máy bay đi Bangkok nhé.,2026-04-02 06:35:00,Neutral
+CH_0023,CUST_004,Bên bạn còn chuyến bay nào của Qantas đi Singapore sáng sớm không?,2026-04-04 06:10:00,Neutral
+CH_0024,CUST_013,"Sắp tới mình bay đi Hong Kong, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-05 10:31:00,Neutral
+CH_0025,CUST_015,Chuyến bay từ TP.HCM đi Bangkok có yêu cầu giấy tờ đặc biệt gì không?,2026-04-10 19:23:00,Neutral
+CH_0026,CUST_004,Tư vấn giúp mình hành trình từ Hà Nội đi TP.HCM giá tốt nhất cho người già.,2026-04-09 23:49:00,Neutral
+CH_0027,CUST_004,Chuyến bay từ Đà Nẵng đi Đà Nẵng có yêu cầu giấy tờ đặc biệt gì không?,2026-04-08 00:03:00,Neutral
+CH_0028,CUST_005,Mình muốn xem giá vé từ TP.HCM đi Seoul vào ngày 22/04/2026 tầm khung giờ 12:00.,2026-04-06 15:52:00,Neutral
+CH_0029,CUST_015,"Vừa bay về từ Sydney, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-05 02:38:00,Positive
+CH_0030,CUST_003,Đi Bangkok thì hộ chiếu còn hạn bao lâu là được bạn nhỉ?,2026-04-05 03:44:00,Neutral
+CH_0031,CUST_008,"Web của các bạn khó dùng quá, mình không tìm được chỗ nhập mã giảm giá.",2026-04-03 21:24:00,Negative
+CH_0032,CUST_002,Mình muốn xem giá vé từ Đà Nẵng đi Bangkok vào ngày 16/04/2026 tầm khung giờ 19:00.,2026-04-04 08:38:00,Neutral
+CH_0033,CUST_005,Chuyến bay từ TP.HCM đi TP.HCM có yêu cầu giấy tờ đặc biệt gì không?,2026-04-08 12:16:00,Neutral
+CH_0034,CUST_004,"Hành lý của tôi bị hỏng sau chuyến bay Vietnam Airlines, tôi cần gặp ai để giải quyết?",2026-04-05 17:20:00,Negative
+CH_0035,CUST_008,"Mình đi cùng đoàn khách 5 người, có thể sắp xếp ghế cửa sổ cạnh nhau không?",2026-04-10 20:13:00,Neutral
+CH_0036,CUST_001,"Vừa bay về từ Seoul, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-02 10:52:00,Positive
+CH_0037,CUST_011,Tư vấn giúp mình hành trình từ TP.HCM đi Seoul giá tốt nhất cho 2 người lớn 1 trẻ em.,2026-04-06 20:47:00,Neutral
+CH_0038,CUST_012,"Mình đi cùng người già, có thể sắp xếp ghế cửa sổ cạnh nhau không?",2026-04-03 20:02:00,Neutral
+CH_0039,CUST_008,"Vừa bay về từ Singapore, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-05 18:49:00,Positive
+CH_0040,CUST_007,Cho mình hỏi thủ tục mang thú cưng lên máy bay đi TP.HCM nhé.,2026-04-09 11:16:00,Neutral
+CH_0041,CUST_002,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế lối đi không?",2026-04-11 21:23:00,Positive
+CH_0042,CUST_006,Tư vấn giúp mình hành trình từ TP.HCM đi TP.HCM giá tốt nhất cho đoàn khách 5 người.,2026-04-01 13:57:00,Neutral
+CH_0043,CUST_002,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Singapore chỉ trong 2 phút.",2026-04-02 23:53:00,Positive
+CH_0044,CUST_009,Bên bạn còn chuyến bay nào của Korean Air đi Tokyo sáng sớm không?,2026-04-04 22:36:00,Neutral
+CH_0045,CUST_010,"Web của các bạn khó dùng quá, mình không tìm được chỗ nhập mã giảm giá.",2026-04-08 10:04:00,Negative
+CH_0046,CUST_005,Mình muốn xem giá vé từ TP.HCM đi Tokyo vào ngày 21/04/2026 tầm khung giờ 07:00.,2026-04-10 01:07:00,Neutral
+CH_0047,CUST_012,Cho mình hỏi thủ tục mang thú cưng lên máy bay đi Tokyo nhé.,2026-04-02 07:06:00,Neutral
+CH_0048,CUST_003,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-09 20:58:00,Neutral
+CH_0049,CUST_012,Hạng vé Economy của Bamboo Airways có được mang theo 20kg hành lý ký gửi không?,2026-04-10 04:03:00,Neutral
+CH_0050,CUST_013,"Vừa bay về từ Bangkok, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-03 23:56:00,Positive
+CH_0051,CUST_002,Rất hài lòng với cách phục vụ của Bamboo Airways trên chuyến bay hôm qua.,2026-04-09 07:01:00,Positive
+CH_0052,CUST_011,Tư vấn giúp mình hành trình từ TP.HCM đi Seoul giá tốt nhất cho 2 người lớn 1 trẻ em.,2026-04-07 02:36:00,Neutral
+CH_0053,CUST_010,Mình muốn xem giá vé từ Đà Nẵng đi Bangkok vào ngày 20/04/2026 tầm khung giờ 17:00.,2026-04-10 02:06:00,Neutral
+CH_0054,CUST_011,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-07 23:35:00,Neutral
+CH_0055,CUST_013,Mình muốn xem giá vé từ Đà Nẵng đi TP.HCM vào ngày 19/04/2026 tầm khung giờ 21:00.,2026-04-04 21:50:00,Neutral
+CH_0056,CUST_002,Bên bạn còn chuyến bay nào của Cathay Pacific đi Singapore sáng sớm không?,2026-04-11 16:17:00,Neutral
+CH_0057,CUST_011,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Singapore chỉ trong 2 phút.",2026-04-09 02:31:00,Positive
+CH_0058,CUST_009,Chuyến bay từ Đà Nẵng đi Sydney có yêu cầu giấy tờ đặc biệt gì không?,2026-04-07 03:06:00,Neutral
+CH_0059,CUST_011,"Vừa bay về từ Đà Nẵng, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-11 16:24:00,Positive
+CH_0060,CUST_014,"Lần trước mình bay Cathay Pacific rất thích suất ăn Halal, chuyến đi Hong Kong này nhớ đặt cho mình nhé.",2026-04-03 15:31:00,Positive
+CH_0061,CUST_002,Bên bạn còn chuyến bay nào của Bamboo Airways đi TP.HCM sáng sớm không?,2026-04-05 19:16:00,Neutral
+CH_0062,CUST_007,"Tôi đang kẹt ở bước thanh toán cho chuyến đi Seoul, hệ thống cứ báo lỗi mã PAYMENT_FAILED.",2026-04-01 19:12:00,Negative
+CH_0063,CUST_001,"Tôi đang kẹt ở bước thanh toán cho chuyến đi Sydney, hệ thống cứ báo lỗi mã PAYMENT_FAILED.",2026-04-11 21:05:00,Negative
+CH_0064,CUST_010,Cho mình hỏi hạng Premium Economy đi Sydney có được vào phòng chờ thương gia không?,2026-04-06 03:23:00,Neutral
+CH_0065,CUST_013,Vé máy bay đi Bangkok hạng Business ngày 15/04/2026 còn không bạn?,2026-04-06 06:26:00,Neutral
+CH_0066,CUST_006,"Vừa bay về từ Seoul, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-01 13:30:00,Positive
+CH_0067,CUST_011,Tại sao giá vé đi Tokyo vừa xem xong quay lại đã tăng thêm 500k rồi?,2026-04-01 20:15:00,Negative
+CH_0068,CUST_008,Chuyến bay từ TP.HCM đi Bangkok có yêu cầu giấy tờ đặc biệt gì không?,2026-04-10 13:59:00,Neutral
+CH_0069,CUST_004,Đi Hong Kong thì hộ chiếu còn hạn bao lâu là được bạn nhỉ?,2026-04-06 06:38:00,Neutral
+CH_0070,CUST_005,Tại sao giá vé đi TP.HCM vừa xem xong quay lại đã tăng thêm 500k rồi?,2026-04-07 11:12:00,Negative
+CH_0071,CUST_010,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi TP.HCM chỉ trong 2 phút.",2026-04-08 01:31:00,Positive
+CH_0072,CUST_002,"Mình đi cùng 2 người lớn 1 trẻ em, có thể sắp xếp ghế lối đi cạnh nhau không?",2026-04-05 09:22:00,Neutral
+CH_0073,CUST_009,"Web của các bạn khó dùng quá, mình không tìm được chỗ nhập mã giảm giá.",2026-04-01 06:49:00,Negative
+CH_0074,CUST_014,Hạng vé Economy của Korean Air có được mang theo 20kg hành lý ký gửi không?,2026-04-02 11:15:00,Neutral
+CH_0075,CUST_008,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Sydney chỉ trong 2 phút.",2026-04-10 11:06:00,Positive
+CH_0076,CUST_010,"Sắp tới mình bay đi Singapore, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-05 03:41:00,Neutral
+CH_0077,CUST_003,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế lối đi không?",2026-04-11 03:44:00,Positive
+CH_0078,CUST_010,"Mình đi cùng đoàn khách 5 người, có thể sắp xếp ghế lối đi cạnh nhau không?",2026-04-02 18:40:00,Neutral
+CH_0079,CUST_012,"Lần trước mình bay Bamboo Airways rất thích suất ăn trẻ em, chuyến đi Singapore này nhớ đặt cho mình nhé.",2026-04-04 00:38:00,Positive
+CH_0080,CUST_005,Cho mình hỏi hạng Premium Economy đi Singapore có được vào phòng chờ thương gia không?,2026-04-11 21:39:00,Neutral
+CH_0081,CUST_005,"Sắp tới mình bay đi Seoul, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-10 13:40:00,Neutral
+CH_0082,CUST_001,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Seoul chỉ trong 2 phút.",2026-04-11 04:52:00,Positive
+CH_0083,CUST_015,Vé máy bay đi Sydney hạng Business ngày 24/04/2026 còn không bạn?,2026-04-01 18:09:00,Neutral
+CH_0084,CUST_010,Tại sao giá vé đi Seoul vừa xem xong quay lại đã tăng thêm 500k rồi?,2026-04-10 16:23:00,Negative
+CH_0085,CUST_013,"Lần trước mình bay Cathay Pacific rất thích suất ăn chay, chuyến đi Bangkok này nhớ đặt cho mình nhé.",2026-04-07 11:27:00,Positive
+CH_0086,CUST_008,Mình muốn xem giá vé từ Hà Nội đi Sydney vào ngày 15/04/2026 tầm khung giờ 14:00.,2026-04-11 15:11:00,Neutral
+CH_0087,CUST_003,Mình muốn xem giá vé từ Đà Nẵng đi Seoul vào ngày 16/04/2026 tầm khung giờ 11:00.,2026-04-03 22:49:00,Neutral
+CH_0088,CUST_010,"Hành lý của tôi bị hỏng sau chuyến bay Korean Air, tôi cần gặp ai để giải quyết?",2026-04-04 00:31:00,Negative
+CH_0089,CUST_011,Cho mình hỏi hạng Business đi Đà Nẵng có được vào phòng chờ thương gia không?,2026-04-11 01:24:00,Neutral
+CH_0090,CUST_007,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Seoul chỉ trong 2 phút.",2026-04-08 12:16:00,Positive
+CH_0091,CUST_004,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-06 18:43:00,Neutral
+CH_0092,CUST_012,Rất hài lòng với cách phục vụ của Bamboo Airways trên chuyến bay hôm qua.,2026-04-01 15:28:00,Positive
+CH_0093,CUST_005,Mình muốn xem giá vé từ Đà Nẵng đi Singapore vào ngày 17/04/2026 tầm khung giờ 16:00.,2026-04-01 11:49:00,Neutral
+CH_0094,CUST_013,"Hành lý của tôi bị hỏng sau chuyến bay Cathay Pacific, tôi cần gặp ai để giải quyết?",2026-04-02 07:07:00,Negative
+CH_0095,CUST_009,Tại sao chuyến bay VN371 lại bị hoãn tận 3 tiếng mà không thông báo trước vậy?,2026-04-11 05:20:00,Negative
+CH_0096,CUST_010,"Vừa bay về từ TP.HCM, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-03 17:25:00,Positive
+CH_0097,CUST_013,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Đà Nẵng chỉ trong 2 phút.",2026-04-09 09:33:00,Positive
+CH_0098,CUST_012,Chuyến bay từ Đà Nẵng đi Tokyo có yêu cầu giấy tờ đặc biệt gì không?,2026-04-03 11:59:00,Neutral
+CH_0099,CUST_008,Rất hài lòng với cách phục vụ của Korean Air trên chuyến bay hôm qua.,2026-04-11 02:57:00,Positive
+CH_0100,CUST_006,"Ghế lối đi mình ngồi hôm qua rất thoải mái, cảm ơn bạn tư vấn.",2026-04-04 13:25:00,Positive
+CH_0101,CUST_005,"Lần trước mình bay Vietnam Airlines rất thích suất ăn trẻ em, chuyến đi Singapore này nhớ đặt cho mình nhé.",2026-04-10 14:26:00,Positive
+CH_0102,CUST_014,"Ghế cửa sổ mình ngồi hôm qua rất thoải mái, cảm ơn bạn tư vấn.",2026-04-07 02:21:00,Positive
+CH_0103,CUST_011,Vé máy bay đi Tokyo hạng Business ngày 22/04/2026 còn không bạn?,2026-04-01 20:01:00,Neutral
+CH_0104,CUST_005,Bên bạn còn chuyến bay nào của Korean Air đi Bangkok sáng sớm không?,2026-04-07 11:15:00,Neutral
+CH_0105,CUST_006,"Vừa bay về từ Singapore, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-11 13:29:00,Positive
+CH_0106,CUST_011,Hạng vé Economy của Bamboo Airways có được mang theo 20kg hành lý ký gửi không?,2026-04-08 09:52:00,Neutral
+CH_0107,CUST_005,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi TP.HCM chỉ trong 2 phút.",2026-04-09 19:31:00,Positive
+CH_0108,CUST_009,"Vừa bay về từ Bangkok, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-05 13:01:00,Positive
+CH_0109,CUST_014,Tại sao chuyến bay VN364 lại bị hoãn tận 3 tiếng mà không thông báo trước vậy?,2026-04-07 22:02:00,Negative
+CH_0110,CUST_003,Vé máy bay đi Seoul hạng Business ngày 13/04/2026 còn không bạn?,2026-04-08 05:03:00,Neutral
+CH_0111,CUST_002,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Hong Kong chỉ trong 2 phút.",2026-04-09 05:25:00,Positive
+CH_0112,CUST_007,Rất hài lòng với cách phục vụ của VietJet Air trên chuyến bay hôm qua.,2026-04-05 19:05:00,Positive
+CH_0113,CUST_005,Chuyến bay từ TP.HCM đi Singapore có yêu cầu giấy tờ đặc biệt gì không?,2026-04-05 18:33:00,Neutral
+CH_0114,CUST_005,"Sắp tới mình bay đi Bangkok, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-03 16:54:00,Neutral
+CH_0115,CUST_006,Cho mình hỏi hạng Premium Economy đi Đà Nẵng có được vào phòng chờ thương gia không?,2026-04-09 09:07:00,Neutral
+CH_0116,CUST_002,Vé máy bay đi Singapore hạng Business ngày 24/04/2026 còn không bạn?,2026-04-10 16:58:00,Neutral
+CH_0117,CUST_007,"Ghế lối đi mình ngồi hôm qua rất thoải mái, cảm ơn bạn tư vấn.",2026-04-03 22:52:00,Positive
+CH_0118,CUST_012,Bên bạn còn chuyến bay nào của Cathay Pacific đi Hong Kong sáng sớm không?,2026-04-02 14:35:00,Neutral
+CH_0119,CUST_006,"Chatbot tư vấn rất nhanh, mình đã đặt xong vé đi Sydney chỉ trong 2 phút.",2026-04-04 08:18:00,Positive
+CH_0120,CUST_009,Tại sao giá vé đi Hong Kong vừa xem xong quay lại đã tăng thêm 500k rồi?,2026-04-04 16:53:00,Negative
+CH_0121,CUST_003,Hạng vé Economy của Qantas có được mang theo 20kg hành lý ký gửi không?,2026-04-10 08:03:00,Neutral
+CH_0122,CUST_002,"Web của các bạn khó dùng quá, mình không tìm được chỗ nhập mã giảm giá.",2026-04-05 13:55:00,Negative
+CH_0123,CUST_010,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế hàng thoát hiểm không?",2026-04-10 17:38:00,Positive
+CH_0124,CUST_014,"Tôi có thẻ thành viên Platinum, check giúp tôi có được ưu tiên chọn ghế hàng thoát hiểm không?",2026-04-07 15:46:00,Positive
+CH_0125,CUST_011,"Tôi đang kẹt ở bước thanh toán cho chuyến đi Bangkok, hệ thống cứ báo lỗi mã TIMEOUT_SESSION.",2026-04-07 21:35:00,Negative
+CH_0126,CUST_008,Cho mình hỏi hạng Economy đi Đà Nẵng có được vào phòng chờ thương gia không?,2026-04-01 14:21:00,Neutral
+CH_0127,CUST_004,"Ghế lối đi mình ngồi hôm qua rất thoải mái, cảm ơn bạn tư vấn.",2026-04-03 16:01:00,Positive
+CH_0128,CUST_015,Vé máy bay đi Seoul hạng Business ngày 17/04/2026 còn không bạn?,2026-04-05 02:12:00,Neutral
+CH_0129,CUST_009,Tư vấn giúp mình hành trình từ Đà Nẵng đi Seoul giá tốt nhất cho đoàn khách 5 người.,2026-04-04 17:35:00,Neutral
+CH_0130,CUST_002,"Hành lý của tôi bị hỏng sau chuyến bay Bamboo Airways, tôi cần gặp ai để giải quyết?",2026-04-06 04:11:00,Negative
+CH_0131,CUST_007,Tại sao giá vé đi Bangkok vừa xem xong quay lại đã tăng thêm 500k rồi?,2026-04-08 22:40:00,Negative
+CH_0132,CUST_007,Tư vấn giúp mình hành trình từ Hà Nội đi TP.HCM giá tốt nhất cho người già.,2026-04-06 07:49:00,Neutral
+CH_0133,CUST_004,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-05 09:35:00,Neutral
+CH_0134,CUST_005,Đi Đà Nẵng thì hộ chiếu còn hạn bao lâu là được bạn nhỉ?,2026-04-10 05:42:00,Neutral
+CH_0135,CUST_015,Chuyến bay từ Hà Nội đi Sydney có yêu cầu giấy tờ đặc biệt gì không?,2026-04-02 18:23:00,Neutral
+CH_0136,CUST_009,"Mình đi cùng đoàn khách 5 người, có thể sắp xếp ghế hàng thoát hiểm cạnh nhau không?",2026-04-09 13:26:00,Neutral
+CH_0137,CUST_010,"Sắp tới mình bay đi Sydney, mình muốn đăng ký hỗ trợ xe lăn cho người cao tuổi.",2026-04-01 23:09:00,Neutral
+CH_0138,CUST_015,Tại sao chuyến bay VN761 lại bị hoãn tận 3 tiếng mà không thông báo trước vậy?,2026-04-03 06:53:00,Negative
+CH_0139,CUST_004,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-04 08:39:00,Neutral
+CH_0140,CUST_005,Rất hài lòng với cách phục vụ của Korean Air trên chuyến bay hôm qua.,2026-04-04 17:10:00,Positive
+CH_0141,CUST_014,Đi TP.HCM thì hộ chiếu còn hạn bao lâu là được bạn nhỉ?,2026-04-03 01:02:00,Neutral
+CH_0142,CUST_015,Tư vấn giúp mình hành trình từ TP.HCM đi Singapore giá tốt nhất cho người già.,2026-04-09 02:54:00,Neutral
+CH_0143,CUST_011,"Mình đi cùng người già, có thể sắp xếp ghế cửa sổ cạnh nhau không?",2026-04-06 00:08:00,Neutral
+CH_0144,CUST_014,"Hành lý của tôi bị hỏng sau chuyến bay Vietnam Airlines, tôi cần gặp ai để giải quyết?",2026-04-04 04:52:00,Negative
+CH_0145,CUST_006,Hạng vé Economy của Vietnam Airlines có được mang theo 20kg hành lý ký gửi không?,2026-04-05 05:43:00,Neutral
+CH_0146,CUST_007,"Tôi đang kẹt ở bước thanh toán cho chuyến đi Bangkok, hệ thống cứ báo lỗi mã PAYMENT_FAILED.",2026-04-04 02:50:00,Negative
+CH_0147,CUST_003,"Vừa bay về từ TP.HCM, cảm ơn đội ngũ hỗ trợ đã giúp mình đổi vé phút chót!",2026-04-04 21:36:00,Positive
+CH_0148,CUST_006,Vé máy bay đi Tokyo hạng Business ngày 23/04/2026 còn không bạn?,2026-04-09 14:32:00,Neutral
+CH_0149,CUST_013,Hạng vé Economy của Qantas có được mang theo 20kg hành lý ký gửi không?,2026-04-04 06:04:00,Neutral
+CH_0150,CUST_014,Cho mình hỏi hạng Business đi TP.HCM có được vào phòng chờ thương gia không?,2026-04-02 23:50:00,Neutral

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NEO - Trợ lý AI thông minh của Vietnam Airlines. Tìm vé, đặt chỗ và check-in online bằng ngôn ngữ tự nhiên." />
+  <title>NEO – Trợ lý AI Vietnam Airlines | Prototype Demo</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- ===================================================
+     PROACTIVE POPUP CONTAINER (UC-01)
+=================================================== -->
+<div id="proactive-container"></div>
+
+<!-- ===================================================
+     MAIN LAYOUT
+=================================================== -->
+<div class="page-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" role="navigation" aria-label="Menu chính">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🇻🇳</span>
+      <div class="logo-text">
+        <strong>Vietnam Airlines</strong>
+        <small>Lotusmiles</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" id="nav-home">
+        <span class="nav-icon">🏠</span> Trang chủ
+      </div>
+      <div class="nav-item" id="nav-book">
+        <span class="nav-icon">🎫</span> Mua vé
+      </div>
+      <div class="nav-item" id="nav-services">
+        <span class="nav-icon">🛎</span> Dịch vụ bổ trợ
+      </div>
+      <div class="nav-item" id="nav-itinerary">
+        <span class="nav-icon">🗺</span> Hành trình
+      </div>
+      <div class="nav-item" id="nav-experience">
+        <span class="nav-icon">✈️</span> Trải nghiệm bay
+      </div>
+      <div class="nav-item" id="nav-lotus">
+        <span class="nav-icon">🌸</span> Lotusmiles
+      </div>
+      <div class="nav-item" id="nav-help">
+        <span class="nav-icon">❓</span> Trợ giúp
+      </div>
+      <div class="nav-item" id="nav-chat" style="border-top:1px solid rgba(255,255,255,.1); margin-top:12px;">
+        <span class="nav-icon">🤖</span> Chat với NEO
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="lotusmiles-label">LOTUSMILES</div>
+      <div class="login-section">
+        <select id="user-select" aria-label="Chọn tài khoản demo">
+          <option value="">-- Chọn tài khoản demo --</option>
+          <option value="CUST_007">VU DUNG · Gold Member</option>
+          <option value="CUST_005">VU NAM · Platinum Member</option>
+          <option value="CUST_001">TRAN HUNG · Gold Member</option>
+          <option value="CUST_008">NGUYEN ANH · Silver Member</option>
+        </select>
+        <button id="login-btn">Đăng nhập demo</button>
+        <div id="user-info"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- Hero Section -->
+    <section class="hero-section" aria-label="Giới thiệu NEO">
+      <div class="hero-grid">
+        <div>
+          <div class="hero-badge">
+            <span>🤖</span> AI-Powered Assistant
+          </div>
+          <h1 class="hero-title">
+            Chat ngay cùng <span>NEO</span><br/>
+            Trợ lý AI của Vietnam Airlines
+          </h1>
+          <p class="hero-desc">
+            Tìm vé, lọc đa điều kiện và check-in online bằng ngôn ngữ tự nhiên.
+            Nhanh hơn, thông minh hơn, cá nhân hóa hơn.
+          </p>
+          <ul class="hero-features" aria-label="Các tính năng nổi bật">
+            <li>Lọc vé đa trường với AI (giá, giờ, hạng ghế cùng lúc)</li>
+            <li>Tư vấn suy luận đa bước cho nhóm phức tạp</li>
+            <li>Nhận gợi ý cá nhân hóa từ lịch sử bay</li>
+            <li>Check-in online bằng mã PNR hoặc PDF</li>
+          </ul>
+        </div>
+        <div class="hero-neo-illustration" aria-hidden="true">✈️</div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions-section" aria-label="Thao tác nhanh">
+      <div class="section-title">Thử ngay cùng NEO</div>
+      <div class="quick-actions-grid">
+        <div class="qa-card" id="qa-search" role="button" tabindex="0" aria-label="Tìm vé nhanh">
+          <div class="qa-icon">🔍</div>
+          <div class="qa-title">Tìm vé nhanh</div>
+          <div class="qa-desc">Lọc đa trường bằng câu nói tự nhiên</div>
+        </div>
+        <div class="qa-card" id="qa-family" role="button" tabindex="0" aria-label="Đặt vé gia đình">
+          <div class="qa-icon">👨‍👩‍👧‍👦</div>
+          <div class="qa-title">Đặt vé gia đình</div>
+          <div class="qa-desc">Tư vấn nhóm, người cao tuổi & trẻ em</div>
+        </div>
+        <div class="qa-card" id="qa-checkin" role="button" tabindex="0" aria-label="Check-in online">
+          <div class="qa-icon">📄</div>
+          <div class="qa-title">Check-in Online</div>
+          <div class="qa-desc">Bằng mã PNR hoặc upload PDF vé</div>
+        </div>
+        <div class="qa-card" id="qa-vip" role="button" tabindex="0" aria-label="Ưu đãi Lotusmiles">
+          <div class="qa-icon">🌸</div>
+          <div class="qa-title">Ưu đãi Lotusmiles</div>
+          <div class="qa-desc">Đăng nhập để nhận gợi ý cá nhân</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Info Cards -->
+    <section class="content-section" aria-label="Thông tin dịch vụ">
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-icon">💡</div>
+          <h3>Lọc đa trường thông minh</h3>
+          <p>Nhập câu như "Vé dưới 2 triệu, bay buổi sáng, hạng Phổ thông" — NEO xử lý toàn bộ cùng lúc.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-icon">🎯</div>
+          <h3>Độ chính xác cao</h3>
+          <p>NEO chỉ xác nhận thay cho bạn và redirect tới trang thanh toán. Không tự thực hiện giao dịch.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-icon">🔒</div>
+          <h3>Bảo mật dữ liệu</h3>
+          <p>Thông tin CCCD/Passport chỉ dùng cho check-in. Không lưu dữ liệu tài chính qua chat.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================================================
+     CHAT WIDGET
+=================================================== -->
+
+<!-- Toggle Button -->
+<button id="chat-toggle" aria-label="Mở chat với NEO">
+  💬
+  <span class="chat-badge" aria-label="1 tin nhắn mới">1</span>
+</button>
+
+<!-- Chat Window -->
+<div id="chat-widget" role="dialog" aria-label="Chat với NEO" aria-live="polite">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-avatar" aria-hidden="true">🤖</div>
+    <div class="chat-header-info">
+      <div class="chat-header-name">NEO – Trợ lý Vietnam Airlines</div>
+      <div class="chat-header-status">Đang hoạt động 24/7</div>
+    </div>
+    <div class="chat-header-actions">
+      <button class="header-btn" id="chat-minimize" aria-label="Thu nhỏ">–</button>
+      <button class="header-btn" id="chat-close" aria-label="Đóng chat">×</button>
+    </div>
+  </div>
+
+  <!-- Messages Area -->
+  <div id="chat-messages" role="log" aria-label="Lịch sử hội thoại">
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" aria-label="NEO đang nhập" style="display:none">
+      <div class="typing-avatar" aria-hidden="true">🤖</div>
+      <div class="typing-dots" role="status">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="chat-input-area">
+    <div class="input-row">
+      <input
+        type="text"
+        id="chat-input"
+        placeholder="Nhập câu hỏi của bạn..."
+        autocomplete="off"
+        aria-label="Nhập tin nhắn"
+        maxlength="500"
+      />
+      <div class="input-actions">
+        <button class="input-action-btn" id="upload-trigger" title="Upload file PDF/ảnh" aria-label="Upload file">📎</button>
+        <button id="send-btn" aria-label="Gửi tin nhắn">➤</button>
+      </div>
+    </div>
+    <div class="chat-disclaimer">
+      NEO có thể sai sót, hãy kiểm tra thông tin quan trọng.
+      <a href="#" style="color:inherit">Điều khoản sử dụng</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================================================
+     SCRIPTS
+=================================================== -->
+<script src="js/mock-api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/chatbot.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  // ===== Quick Action card triggers =====
+  document.getElementById("qa-search").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.add("open");
+    document.getElementById("chat-toggle").style.display = "none";
+    setTimeout(() => {
+      if (!document.querySelector(".message")) return;
+      const input = document.getElementById("chat-input");
+      input.value = "Tìm vé Hà Nội đi Đà Nẵng ngày 15/4, giá dưới 2 triệu, bay buổi sáng";
+      document.getElementById("send-btn").click();
+    }, 500);
+  });
+
+  document.getElementById("qa-family").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.add("open");
+    document.getElementById("chat-toggle").style.display = "none";
+    setTimeout(() => {
+      const input = document.getElementById("chat-input");
+      input.value = "Tôi cần vé cho gia đình 4 người đi Phú Quốc ngày 17/4: 1 người lớn, 1 bà cụ 68 tuổi đau khớp, 1 bé 4 tuổi và 1 bé 1 tuổi rưỡi. Tính tổng tiền và tư vấn dịch vụ giúp tôi.";
+      document.getElementById("send-btn").click();
+    }, 500);
+  });
+
+  document.getElementById("qa-checkin").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.add("open");
+    document.getElementById("chat-toggle").style.display = "none";
+    setTimeout(() => {
+      const input = document.getElementById("chat-input");
+      input.value = "Tôi muốn check-in online cho chuyến bay của mình";
+      document.getElementById("send-btn").click();
+    }, 500);
+  });
+
+  document.getElementById("qa-vip").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.add("open");
+    document.getElementById("chat-toggle").style.display = "none";
+    if (!document.querySelector(".message")) {
+      // Prompt to login
+      setTimeout(() => {
+        UI.addBotMessage("Để nhận ưu đãi cá nhân hóa, bạn hãy đăng nhập bằng tài khoản Lotusmiles ở menu bên trái nhé! 🌸");
+      }, 500);
+    }
+  });
+
+  // ===== Nav items (placeholder) =====
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+    });
+  });
+
+  document.getElementById("nav-chat").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.add("open");
+    document.getElementById("chat-toggle").style.display = "none";
+  });
+
+  document.getElementById("chat-minimize").addEventListener("click", () => {
+    document.getElementById("chat-widget").classList.remove("open");
+    document.getElementById("chat-toggle").style.display = "flex";
+  });
+</script>
+
+</body>
+</html>

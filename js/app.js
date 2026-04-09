@@ -15,6 +15,7 @@
   let backendSessionId = (window.crypto && window.crypto.randomUUID)
     ? window.crypto.randomUUID()
     : `neo-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const COMPLEX_SUPPORT_PATTERN = /(doi\s*ve|doi\s*chuyen|hoan\s*ve|hoan\s*tien|refund|mat\s*hanh\s*ly|that\s*lac\s*hanh\s*ly|hanh\s*ly\s*(bi\s*)?(hong|mat)|khieu\s*nai|boi\s*thuong|cham\s*chuyen|hoan\s*chuyen|huy\s*chuyen|delay|cancel)/i;
 
   // ===== DOM References =====
   const chatInput = document.getElementById("chat-input");
@@ -48,7 +49,7 @@
   });
 
   // ===== User Login Simulation =====
-  loginBtn.addEventListener("click", () => {
+  loginBtn.addEventListener("click", async () => {
     const userId = userSelect.value;
     if (!userId) return;
     currentUser = MockDB.customers.find(c => c.id === userId);
@@ -67,6 +68,8 @@
       </div>
     `;
 
+    await bindBackendSessionUser(currentUser.id);
+
     // Check CDP profile and trigger proactive if applicable
     const cdp = MockAPI.getCDPProfile(currentUser.id);
     if (cdp) {
@@ -79,6 +82,32 @@
       }, 1500);
     }
   });
+
+  async function bindBackendSessionUser(userId) {
+    if (!USE_BACKEND_AGENT || !userId) return;
+
+    try {
+      const resp = await fetch(`${BACKEND_BASE_URL}/api/session/bind-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          session_id: backendSessionId,
+          user_id: userId
+        })
+      });
+
+      if (!resp.ok) return;
+
+      const data = await resp.json();
+      if (data?.session_id) {
+        backendSessionId = data.session_id;
+      }
+    } catch (error) {
+      console.warn("Cannot bind backend customer context:", error);
+    }
+  }
 
   // ===== UC-01: Proactive Greeting =====
   function triggerProactive(customer, cdp) {
@@ -249,6 +278,17 @@
   }
 
   async function processUserMessage(text) {
+    if (isComplexSupportRequest(text)) {
+      clearThinkingBubble();
+      await UI.addBotMessage(
+        "Yêu cầu này cần tư vấn viên hỗ trợ trực tiếp để xử lý chính xác hơn (đổi vé/hoàn tiền/hành lý/khiếu nại).",
+        { stream: false, delay: 120 }
+      );
+      const widget = UI.createEscalationWidget();
+      await UI.addElement(widget, 200);
+      return;
+    }
+
     if (USE_BACKEND_AGENT) {
       const handledByDirectPNR = await tryDirectPNRLookup(text);
       if (handledByDirectPNR) return;
@@ -356,6 +396,18 @@
   function looksLikeDirectPNRInput(text) {
     const normalized = (text || "").trim().toUpperCase();
     return /^[A-Z0-9]{6}$/.test(normalized) || /^BK[_-]?\d{4}$/.test(normalized);
+  }
+
+  function normalizeIntentText(text) {
+    return (text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  }
+
+  function isComplexSupportRequest(text) {
+    const normalized = normalizeIntentText(text);
+    return COMPLEX_SUPPORT_PATTERN.test(normalized);
   }
 
   async function tryDirectPNRLookup(text) {
@@ -617,7 +669,7 @@
         }
       } else if (t.includes("gửi qua email")) {
         await UI.addBotMessage("✉️ Thẻ lên máy bay đã được gửi đến email của bạn. Chúc bạn chuyến bay vui vẻ! ✈️");
-      } else if (t.includes("nhân viên") || t.includes("hỗ trợ khác")) {
+      } else if (t.includes("nhân viên") || t.includes("tư vấn viên") || t.includes("hỗ trợ khác")) {
         const widget = UI.createEscalationWidget();
         await UI.addElement(widget, 300);
       } else {

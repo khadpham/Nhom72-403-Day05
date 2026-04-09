@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Danh sách vé đầy đủ | NEO Vietnam Airlines</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="tickets-page-body">
+  <div class="tickets-page">
+    <header class="tickets-header">
+      <div class="ticket-nav-row">
+        <button class="back-home-btn" id="back-home-btn">← Quay lại trang chat</button>
+      </div>
+      <h1>Danh sách vé đầy đủ theo bộ lọc</h1>
+      <p id="filters-summary">Đang tải bộ lọc...</p>
+    </header>
+
+    <section class="tickets-layout">
+      <div class="tickets-list-panel">
+        <div id="tickets-count" class="results-header">Đang tải dữ liệu chuyến bay...</div>
+        <div id="tickets-list" class="flight-cards-list"></div>
+        <div id="tickets-empty" class="ticket-empty" style="display:none"></div>
+      </div>
+
+      <aside class="tickets-selected-panel" id="selected-panel">
+        <h3>Chọn chuyến để thanh toán thủ công</h3>
+        <p id="selected-empty" class="ticket-empty" style="padding:0">Bạn chưa chọn chuyến bay nào.</p>
+        <div id="selected-content" style="display:none"></div>
+      </aside>
+    </section>
+  </div>
+
+  <script src="js/tickets.js"></script>
+</body>
+</html>
