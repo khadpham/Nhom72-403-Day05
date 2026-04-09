@@ -10,12 +10,34 @@
   let pendingGroupState = null;
   let pendingThinkingRef = null;
   let lastRedirectPromptKey = null;
+  let lastResolvedFlightFilters = null;
+  let lastResolvedFlightTotal = 0;
+  let lastResolvedPNR = null;
   const BACKEND_BASE_URL = window.NEO_BACKEND_URL || "http://127.0.0.1:8000";
   const USE_BACKEND_AGENT = true;
-  let backendSessionId = (window.crypto && window.crypto.randomUUID)
-    ? window.crypto.randomUUID()
-    : `neo-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const COMPLEX_SUPPORT_PATTERN = /(doi\s*ve|doi\s*chuyen|hoan\s*ve|hoan\s*tien|refund|mat\s*hanh\s*ly|that\s*lac\s*hanh\s*ly|hanh\s*ly\s*(bi\s*)?(hong|mat)|khieu\s*nai|boi\s*thuong|cham\s*chuyen|hoan\s*chuyen|huy\s*chuyen|delay|cancel)/i;
+  const STORAGE_KEYS = {
+    chatHistoryHtml: "neo_chat_history_html_v1",
+    chatWidgetOpen: "neo_chat_widget_open_v1",
+    backendSessionId: "neo_backend_session_id_v1",
+    currentUserId: "neo_current_user_id_v1",
+  };
+
+  const createBackendSessionId = () => {
+    return (window.crypto && window.crypto.randomUUID)
+      ? window.crypto.randomUUID()
+      : `neo-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  };
+
+  let backendSessionId = localStorage.getItem(STORAGE_KEYS.backendSessionId) || createBackendSessionId();
+  localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
+
+  const COMPLEX_SUPPORT_PATTERN = /(doi\s*ve|doi\s*chuyen|hoan\s*ve|hoan\s*tien|refund|mat\s*hanh\s*ly|that\s*lac\s*hanh\s*ly|hanh\s*ly\s*(bi\s*)?(hong|mat)|khieu\s*nai|boi\s*thuong|cham\s*chuyen|hoan\s*chuyen|huy\s*chuyen|delay|cancel|doi\s*ten\s*hanh\s*khach|sai\s*ten\s*ve|doi\s*thong\s*tin\s*ve)/i;
+  const HUMAN_AGENT_REQUEST_PATTERN = /(tu\s*van\s*vien|nhan\s*vien|tong\s*dai|nguoi\s*that|ho\s*tro\s*truc\s*tiep|ket\s*noi\s*agent|ket\s*noi\s*tu\s*van)/i;
+  const SUPPORTED_SCOPE_PATTERN = /(ve\s*may\s*bay|dat\s*ve|dat\s*cho|chuyen\s*bay|tra\s*cuu|check\s*-?in|pnr|hanh\s*ly|chon\s*ghe|xe\s*lan|noi\s*em\s*be|lotusmiles|thanh\s*toan|gia\s*ve|doi\s*ve|hoan\s*ve)/i;
+  const OUT_OF_SCOPE_PATTERN = /(python|javascript|\bjava\b|c\+\+|code|lap\s*trinh|programming|thoi\s*tiet|weather|chung\s*khoan|stock|crypto|bong\s*da|world\s*cup|lich\s*su|toan\s*hoc|homework|bai\s*tap|dich\s*van\s*ban|viet\s*essay|viet\s*content)/i;
+  const REDIRECT_REQUEST_PATTERN = /(chuyen\s*huong|chuyển\s*hướng|redirect|trang\s*gia\s*ve|trang\s*giá\s*vé|xem\s*gia\s*ve|xem\s*giá\s*vé|tickets?\.html|trang\s*ve|trang\s*vé)/i;
+  const FEEDBACK_LOW_RATING_SET = new Set(["chua_tot", "te"]);
+  const feedbackPromptedEvents = new Set();
 
   // ===== DOM References =====
   const chatInput = document.getElementById("chat-input");
@@ -25,37 +47,71 @@
   const uploadTrigger = document.getElementById("upload-trigger");
   const chatWidget = document.getElementById("chat-widget");
   const chatToggle = document.getElementById("chat-toggle");
+  const chatMinimize = document.getElementById("chat-minimize");
   const chatClose = document.getElementById("chat-close");
+  const chatClear = document.getElementById("chat-clear");
   const userSelect = document.getElementById("user-select");
   const proactiveContainer = document.getElementById("proactive-container");
   const loginBtn = document.getElementById("login-btn");
   const userInfo = document.getElementById("user-info");
 
+  if (!chatMessages || !typingIndicator || !uploadTrigger || !chatWidget || !chatToggle || !chatClose || !chatInput || !sendBtn) {
+    console.warn("NEO chat widget markup not found. app.js is skipped on this page.");
+    return;
+  }
+
   // Init UI module
   UI.init(chatMessages, typingIndicator);
 
-  // ===== Chat Open/Close =====
-  chatToggle.addEventListener("click", () => {
-    chatWidget.classList.add("open");
-    chatToggle.style.display = "none";
-    if (!chatMessages.hasChildNodes()) {
-      showWelcome();
+  let persistTimer = null;
+
+  function hasRenderableMessages() {
+    return Array.from(chatMessages.children).some((el) => el.id !== "typing-indicator");
+  }
+
+  function setChatWidgetOpen(isOpen) {
+    chatWidget.classList.toggle("open", !!isOpen);
+    chatToggle.style.display = isOpen ? "none" : "flex";
+    localStorage.setItem(STORAGE_KEYS.chatWidgetOpen, isOpen ? "1" : "0");
+  }
+
+  function persistChatState() {
+    const html = Array.from(chatMessages.children)
+      .filter((el) => el.id !== "typing-indicator")
+      .map((el) => el.outerHTML)
+      .join("");
+
+    localStorage.setItem(STORAGE_KEYS.chatHistoryHtml, html);
+    localStorage.setItem(STORAGE_KEYS.chatWidgetOpen, chatWidget.classList.contains("open") ? "1" : "0");
+    localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
+
+    if (currentUser?.id) {
+      localStorage.setItem(STORAGE_KEYS.currentUserId, currentUser.id);
     }
-  });
+  }
 
-  chatClose.addEventListener("click", () => {
-    chatWidget.classList.remove("open");
-    chatToggle.style.display = "flex";
-  });
+  function schedulePersistChatState() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => persistChatState(), 120);
+  }
 
-  // ===== User Login Simulation =====
-  loginBtn.addEventListener("click", async () => {
-    const userId = userSelect.value;
-    if (!userId) return;
-    currentUser = MockDB.customers.find(c => c.id === userId);
-    if (!currentUser) return;
+  function restoreChatState() {
+    const savedHtml = localStorage.getItem(STORAGE_KEYS.chatHistoryHtml);
+    if (savedHtml) {
+      chatMessages.innerHTML = savedHtml;
+      typingIndicator.style.display = "none";
+      chatMessages.appendChild(typingIndicator);
 
-    ChatEngine.currentUser = currentUser;
+      // Các phần tương tác cũ sau khi restore sẽ mất handler, nên dọn để tránh click lỗi.
+      chatMessages.querySelectorAll(".quick-replies, .file-upload-area, .service-feedback-card").forEach((el) => el.remove());
+    }
+
+    const widgetOpen = localStorage.getItem(STORAGE_KEYS.chatWidgetOpen) === "1";
+    setChatWidgetOpen(widgetOpen);
+  }
+
+  function renderCurrentUserInfo() {
+    if (!currentUser || !loginBtn || !userSelect || !userInfo) return;
 
     loginBtn.style.display = "none";
     userSelect.style.display = "none";
@@ -67,21 +123,93 @@
         <span class="user-tier ${currentUser.tier.toLowerCase()}">${currentUser.tier}</span>
       </div>
     `;
+  }
 
-    await bindBackendSessionUser(currentUser.id);
+  function hydrateCurrentUserFromStorage() {
+    const savedUserId = (localStorage.getItem(STORAGE_KEYS.currentUserId) || "").trim();
+    if (!savedUserId || !window.MockDB?.customers) return;
 
-    // Check CDP profile and trigger proactive if applicable
-    const cdp = MockAPI.getCDPProfile(currentUser.id);
-    if (cdp) {
-      setTimeout(() => triggerProactive(currentUser, cdp), 3000);
-    } else {
-      setTimeout(() => {
-        chatWidget.classList.add("open");
-        chatToggle.style.display = "none";
-        showPersonalizedWelcome(currentUser);
-      }, 1500);
+    const found = MockDB.customers.find((c) => c.id === savedUserId);
+    if (!found) return;
+
+    currentUser = found;
+    ChatEngine.currentUser = currentUser;
+    renderCurrentUserInfo();
+    bindBackendSessionUser(currentUser.id);
+  }
+
+  function setupPersistenceObserver() {
+    const observer = new MutationObserver(() => {
+      schedulePersistChatState();
+    });
+
+    observer.observe(chatMessages, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  restoreChatState();
+  hydrateCurrentUserFromStorage();
+  setupPersistenceObserver();
+  window.addEventListener("beforeunload", persistChatState);
+
+  // ===== Chat Open/Close =====
+  chatToggle.addEventListener("click", () => {
+    setChatWidgetOpen(true);
+    if (!hasRenderableMessages()) {
+      showWelcome();
     }
   });
+
+  chatClose.addEventListener("click", () => {
+    setChatWidgetOpen(false);
+  });
+
+  if (chatMinimize) {
+    chatMinimize.addEventListener("click", () => {
+      setChatWidgetOpen(false);
+    });
+  }
+
+  if (chatClear) {
+    chatClear.addEventListener("click", async () => {
+      chatClear.disabled = true;
+      try {
+        await clearChatHistory();
+      } finally {
+        chatClear.disabled = false;
+      }
+    });
+  }
+
+  // ===== User Login Simulation =====
+  if (loginBtn && userSelect) {
+    loginBtn.addEventListener("click", async () => {
+      const userId = userSelect.value;
+      if (!userId) return;
+      currentUser = MockDB.customers.find(c => c.id === userId);
+      if (!currentUser) return;
+
+      ChatEngine.currentUser = currentUser;
+      localStorage.setItem(STORAGE_KEYS.currentUserId, currentUser.id);
+      renderCurrentUserInfo();
+
+      await bindBackendSessionUser(currentUser.id);
+
+      // Check CDP profile and trigger proactive if applicable
+      const cdp = MockAPI.getCDPProfile(currentUser.id);
+      if (cdp && proactiveContainer) {
+        setTimeout(() => triggerProactive(currentUser, cdp), 3000);
+      } else {
+        setTimeout(() => {
+          setChatWidgetOpen(true);
+          showPersonalizedWelcome(currentUser);
+        }, 600);
+      }
+    });
+  }
 
   async function bindBackendSessionUser(userId) {
     if (!USE_BACKEND_AGENT || !userId) return;
@@ -103,22 +231,206 @@
       const data = await resp.json();
       if (data?.session_id) {
         backendSessionId = data.session_id;
+        localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
       }
     } catch (error) {
       console.warn("Cannot bind backend customer context:", error);
     }
   }
 
+  function resetConversationState() {
+    pendingFlight = null;
+    pendingGroupState = null;
+    pendingThinkingRef = null;
+    lastRedirectPromptKey = null;
+    lastResolvedFlightFilters = null;
+    lastResolvedFlightTotal = 0;
+    lastResolvedPNR = null;
+
+    if (window.ChatEngine?.reset) {
+      ChatEngine.reset();
+    }
+  }
+
+  function clearChatMessagesUI() {
+    Array.from(chatMessages.children)
+      .filter((el) => el.id !== "typing-indicator")
+      .forEach((el) => el.remove());
+
+    typingIndicator.style.display = "none";
+    chatMessages.appendChild(typingIndicator);
+  }
+
+  async function clearBackendHistoryIfPossible(sessionId) {
+    if (!USE_BACKEND_AGENT || !sessionId) return;
+
+    try {
+      await fetch(`${BACKEND_BASE_URL}/api/history/${encodeURIComponent(sessionId)}`, {
+        method: "DELETE"
+      });
+    } catch (error) {
+      console.warn("Cannot clear backend history:", error);
+    }
+  }
+
+  async function clearChatHistory() {
+    const confirmed = window.confirm("Bạn có chắc muốn xóa toàn bộ lịch sử trò chuyện không?");
+    if (!confirmed) return;
+
+    const oldSessionId = backendSessionId;
+    const userIdToRebind = currentUser?.id || null;
+
+    clearThinkingBubble();
+    resetConversationState();
+    clearChatMessagesUI();
+
+    localStorage.removeItem(STORAGE_KEYS.chatHistoryHtml);
+
+    backendSessionId = createBackendSessionId();
+    localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
+
+    await clearBackendHistoryIfPossible(oldSessionId);
+
+    if (userIdToRebind) {
+      await bindBackendSessionUser(userIdToRebind);
+    }
+
+    await UI.addBotMessage("🧹 Đã xóa lịch sử trò chuyện. Mình bắt đầu phiên mới nhé!");
+    UI.addQuickReplies(["Tìm vé máy bay", "Check-in online", "Chat với tư vấn viên"], handleQuickReply);
+    persistChatState();
+  }
+
+  function createServiceFeedbackCard({ triggerEvent, metadata }) {
+    const card = document.createElement("div");
+    card.className = "service-feedback-card bot-message";
+    card.innerHTML = `
+      <div class="service-feedback-title">📝 Đánh giá chất lượng tư vấn</div>
+      <p class="service-feedback-desc">Bạn thấy trải nghiệm vừa rồi thế nào?</p>
+      <div class="feedback-rating-grid">
+        <button class="feedback-rating-btn" data-rating="tot">Tốt</button>
+        <button class="feedback-rating-btn" data-rating="on">Ổn</button>
+        <button class="feedback-rating-btn" data-rating="chua_tot">Chưa tốt</button>
+        <button class="feedback-rating-btn" data-rating="te">Tệ</button>
+      </div>
+      <div class="feedback-improvement-box" style="display:none;">
+        <label for="feedback-note-${Date.now()}">Bạn muốn chúng tôi cải thiện điều gì?</label>
+        <textarea class="feedback-note-input" rows="3" placeholder="Ví dụ: Trả lời ngắn hơn, rõ giá vé hơn..."></textarea>
+      </div>
+      <div class="feedback-actions-row">
+        <button class="feedback-submit-btn" disabled>Gửi đánh giá</button>
+      </div>
+      <div class="feedback-status" aria-live="polite"></div>
+    `;
+
+    const ratingButtons = Array.from(card.querySelectorAll(".feedback-rating-btn"));
+    const improvementBox = card.querySelector(".feedback-improvement-box");
+    const noteInput = card.querySelector(".feedback-note-input");
+    const submitBtn = card.querySelector(".feedback-submit-btn");
+    const statusEl = card.querySelector(".feedback-status");
+
+    let selectedRating = "";
+
+    const updateSubmitState = () => {
+      const noteText = (noteInput?.value || "").trim();
+      const needNote = FEEDBACK_LOW_RATING_SET.has(selectedRating);
+      submitBtn.disabled = !selectedRating || (needNote && !noteText);
+    };
+
+    ratingButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectedRating = btn.dataset.rating || "";
+        ratingButtons.forEach((item) => item.classList.toggle("active", item === btn));
+
+        if (FEEDBACK_LOW_RATING_SET.has(selectedRating)) {
+          improvementBox.style.display = "block";
+        } else {
+          improvementBox.style.display = "none";
+          if (noteInput) noteInput.value = "";
+        }
+
+        updateSubmitState();
+      });
+    });
+
+    if (noteInput) {
+      noteInput.addEventListener("input", updateSubmitState);
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      if (!selectedRating) return;
+
+      const noteText = (noteInput?.value || "").trim();
+      if (FEEDBACK_LOW_RATING_SET.has(selectedRating) && !noteText) {
+        statusEl.textContent = "Vui lòng nhập góp ý cải thiện cho mức đánh giá này.";
+        statusEl.classList.add("error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      statusEl.textContent = "Đang gửi đánh giá...";
+      statusEl.classList.remove("error", "success");
+
+      const payload = {
+        rating: selectedRating,
+        trigger_event: triggerEvent,
+        session_id: backendSessionId,
+        user_id: currentUser?.id || localStorage.getItem(STORAGE_KEYS.currentUserId) || null,
+        improvement_note: noteText || null,
+        metadata: metadata || {},
+      };
+
+      try {
+        const resp = await fetch(`${BACKEND_BASE_URL}/api/feedback`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await resp.json();
+        if (!resp.ok || !data?.ok) {
+          throw new Error(data?.detail || "Không thể lưu đánh giá.");
+        }
+
+        statusEl.textContent = "✅ Cảm ơn bạn! Đánh giá đã được ghi nhận.";
+        statusEl.classList.add("success");
+        ratingButtons.forEach((btn) => {
+          btn.disabled = true;
+        });
+        if (noteInput) noteInput.disabled = true;
+      } catch (error) {
+        statusEl.textContent = "⚠️ Gửi đánh giá chưa thành công, vui lòng thử lại.";
+        statusEl.classList.add("error");
+        console.warn("Cannot submit service feedback:", error);
+        submitBtn.disabled = false;
+      }
+    });
+
+    return card;
+  }
+
+  async function promptServiceFeedback(triggerEvent, metadata = {}) {
+    if (!triggerEvent) return;
+    const onceKey = `${triggerEvent}:${backendSessionId}`;
+    if (feedbackPromptedEvents.has(onceKey)) return;
+    feedbackPromptedEvents.add(onceKey);
+
+    const card = createServiceFeedbackCard({ triggerEvent, metadata });
+    await UI.addElement(card, 120);
+  }
+
   // ===== UC-01: Proactive Greeting =====
   function triggerProactive(customer, cdp) {
+    if (!proactiveContainer) return;
+
     const popup = UI.createProactivePopup(
       customer,
       cdp,
       () => {
         // Accept: open chat and pre-fill search
         popup.remove();
-        chatWidget.classList.add("open");
-        chatToggle.style.display = "none";
+        setChatWidgetOpen(true);
         handleProactiveAccept(customer, cdp);
       },
       () => {
@@ -132,7 +444,7 @@
   }
 
   async function handleProactiveAccept(customer, cdp) {
-    if (!chatMessages.hasChildNodes()) {
+    if (!hasRenderableMessages()) {
       await showPersonalizedWelcome(customer);
     }
 
@@ -147,18 +459,48 @@
     UI.showTyping();
     await new Promise(r => setTimeout(r, 1200));
 
-    const results = MockAPI.searchFlights({
-      origin: route.origin,
-      destination: route.destination,
-      date: nextSaturday,
-      cls: "any"
-    });
+    let filteredResults = [];
 
-    const filteredResults = results.length > 0 ? results : MockAPI.searchFlights({
-      origin: route.origin,
-      destination: route.destination,
-      cls: "any"
-    }).slice(0, 4);
+    try {
+      const exactResp = await fetch(`${BACKEND_BASE_URL}/api/flights/search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          origin: route.origin,
+          destination: route.destination,
+          date: nextSaturday,
+          limit: 12
+        })
+      });
+
+      if (exactResp.ok) {
+        const exactData = await exactResp.json();
+        filteredResults = exactData?.flights || [];
+      }
+
+      if (!filteredResults.length) {
+        const fallbackResp = await fetch(`${BACKEND_BASE_URL}/api/flights/search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            origin: route.origin,
+            destination: route.destination,
+            limit: 4
+          })
+        });
+
+        if (fallbackResp.ok) {
+          const fallbackData = await fallbackResp.json();
+          filteredResults = fallbackData?.flights || [];
+        }
+      }
+    } catch (error) {
+      console.warn("Cannot load proactive flights from backend:", error);
+    }
 
     filteredResults.forEach(r => { r.origin = route.origin; r.destination = route.destination; });
 
@@ -231,17 +573,80 @@
     UI.hideTyping();
   }
 
-  function openFilteredTicketPage(filters) {
+  function buildFilteredTicketUrl(filters) {
     const params = new URLSearchParams();
     Object.entries(filters || {}).forEach(([k, v]) => {
       if (v !== null && v !== undefined && v !== "") {
         params.set(k, String(v));
       }
     });
-    window.location.href = `tickets.html?${params.toString()}`;
+    return `tickets.html?${params.toString()}`;
   }
 
-  async function maybePromptRedirectToTicketPage(userText) {
+  function openFilteredTicketPage(filters, options = {}) {
+    const { target = "same-tab" } = options;
+    const url = buildFilteredTicketUrl(filters);
+
+    persistChatState();
+
+    if (target === "new-tab") {
+      const popup = window.open(url, "_blank", "noopener");
+      return Boolean(popup);
+    }
+
+    window.location.href = url;
+    return true;
+  }
+
+  function openCheckinPage(pnrCode) {
+    const params = new URLSearchParams();
+    if (pnrCode) {
+      params.set("pnr", String(pnrCode).trim().toUpperCase());
+    }
+    persistChatState();
+    window.location.href = `checkin.html?${params.toString()}`;
+  }
+
+  async function suggestTicketRedirect(filters, total, introMessage) {
+    const displayTotal = Number(total) > 0 ? Number(total) : "một số";
+
+    clearThinkingBubble();
+    await UI.addBotMessage(
+      `${introMessage}\n\nBạn có thể bấm nút bên dưới để mở trang chọn vé ở tab mới bất kỳ lúc nào.`,
+      { stream: false, delay: 80 }
+    );
+
+    const card = UI.createRedirectPromptCard(displayTotal, filters, () => {
+      const opened = openFilteredTicketPage(filters, { target: "new-tab" });
+      if (!opened) {
+        UI.addBotMessage("⚠️ Trình duyệt đang chặn tab mới. Bạn hãy cho phép popup và bấm lại nút này nhé.", {
+          stream: false,
+          delay: 80,
+        });
+        return;
+      }
+
+      promptServiceFeedback("ticket_page_open", {
+        total: displayTotal,
+        origin: filters?.origin || null,
+        destination: filters?.destination || null,
+        date: filters?.date || null,
+      });
+    });
+
+    const yesBtn = card.querySelector(".redirect-yes-btn");
+    const noBtn = card.querySelector(".redirect-no-btn");
+    if (yesBtn) yesBtn.textContent = "Đến trang chọn vé";
+    if (noBtn) noBtn.remove();
+
+    await UI.addElement(card, 120);
+    return true;
+  }
+
+  async function maybeSuggestTicketSelection(userText) {
+    const normalizedText = normalizeIntentText(userText);
+    const explicitRedirectRequest = REDIRECT_REQUEST_PATTERN.test(normalizedText);
+
     try {
       const resp = await fetch(`${BACKEND_BASE_URL}/api/flights/from-text`, {
         method: "POST",
@@ -256,36 +661,63 @@
 
       if (!resp.ok) return;
       const data = await resp.json();
-      if (!data?.should_prompt_redirect || !data?.total) return;
-
-      const promptKey = JSON.stringify(data.filters || {});
-      if (promptKey === lastRedirectPromptKey) return;
-      lastRedirectPromptKey = promptKey;
-
-      const promptCard = UI.createRedirectPromptCard(
-        data.total,
-        data.filters || {},
-        (filters) => openFilteredTicketPage(filters),
-        () => {
-          lastRedirectPromptKey = null;
+      if (data?.should_prompt_redirect && data?.total) {
+        const filters = data.filters || {};
+        lastResolvedFlightFilters = filters;
+        lastResolvedFlightTotal = Number(data.total) || 0;
+        const currentPromptKey = JSON.stringify(filters);
+        if (!explicitRedirectRequest && currentPromptKey === lastRedirectPromptKey) {
+          return false;
         }
-      );
+        lastRedirectPromptKey = currentPromptKey;
+        return await suggestTicketRedirect(
+          filters,
+          lastResolvedFlightTotal,
+          `Tôi đã lọc được ${data.total} chuyến từ dữ liệu Vietnam Airlines theo đúng tiêu chí của bạn.`
+        );
+      }
 
-      await UI.addElement(promptCard, 180);
+      if (explicitRedirectRequest && lastResolvedFlightFilters) {
+        return await suggestTicketRedirect(
+          lastResolvedFlightFilters,
+          lastResolvedFlightTotal || 0,
+          "Đây là bộ lọc gần nhất bạn đã xác nhận."
+        );
+      }
     } catch (error) {
-      console.warn("Cannot load redirect suggestion:", error);
+      console.warn("Cannot suggest ticket selection:", error);
+
+      if (explicitRedirectRequest && lastResolvedFlightFilters) {
+        return await suggestTicketRedirect(
+          lastResolvedFlightFilters,
+          lastResolvedFlightTotal || 0,
+          "Backend tạm chậm, nhưng tôi vẫn giữ sẵn bộ lọc gần nhất để bạn mở trang vé."
+        );
+      }
     }
+
+    return false;
   }
 
   async function processUserMessage(text) {
-    if (isComplexSupportRequest(text)) {
+    if (isHumanAdvisorIntent(text) || isComplexSupportRequest(text)) {
       clearThinkingBubble();
       await UI.addBotMessage(
-        "Yêu cầu này cần tư vấn viên hỗ trợ trực tiếp để xử lý chính xác hơn (đổi vé/hoàn tiền/hành lý/khiếu nại).",
+        "Mình đã chuyển sang tư vấn viên ngay cho bạn. Vui lòng bấm 1 trong 2 nút bên dưới để gọi hoặc chat trực tiếp.",
         { stream: false, delay: 120 }
       );
       const widget = UI.createEscalationWidget();
       await UI.addElement(widget, 200);
+      return;
+    }
+
+    if (isOutOfScopeRequest(text)) {
+      clearThinkingBubble();
+      await UI.addBotMessage(
+        "Mình chỉ hỗ trợ dịch vụ bay Vietnam Airlines (tìm vé, check-in, hành lý, Lotusmiles). Bạn muốn mình hỗ trợ mục nào?",
+        { stream: false, delay: 100 }
+      );
+      UI.addQuickReplies(["Tìm vé máy bay", "Check-in online", "Chat với tư vấn viên"], handleQuickReply);
       return;
     }
 
@@ -296,7 +728,10 @@
 
     if (USE_BACKEND_AGENT) {
       const handledByBackend = await processUserMessageWithBackend(text);
-      if (handledByBackend) return;
+      if (handledByBackend) {
+        await maybeSuggestTicketSelection(text);
+        return;
+      }
     }
 
     clearThinkingBubble();
@@ -410,10 +845,23 @@
     return COMPLEX_SUPPORT_PATTERN.test(normalized);
   }
 
+  function isHumanAdvisorIntent(text) {
+    const normalized = normalizeIntentText(text);
+    return HUMAN_AGENT_REQUEST_PATTERN.test(normalized);
+  }
+
+  function isOutOfScopeRequest(text) {
+    const normalized = normalizeIntentText(text);
+    if (SUPPORTED_SCOPE_PATTERN.test(normalized)) return false;
+    return OUT_OF_SCOPE_PATTERN.test(normalized);
+  }
+
   async function tryDirectPNRLookup(text) {
     if (!looksLikeDirectPNRInput(text)) {
       return false;
     }
+
+    const candidate = (text || "").trim().toUpperCase();
 
     try {
       const resp = await fetch(`${BACKEND_BASE_URL}/api/checkin/pnr`, {
@@ -434,8 +882,13 @@
       clearThinkingBubble();
 
       if (data?.ok) {
+        lastResolvedPNR = (data?.pnr || candidate || "").toString().toUpperCase();
         await UI.addBotMessage(data.details || "✅ Đã tra cứu PNR thành công.", { stream: false, delay: 120 });
-        UI.addQuickReplies(["Tiếp tục check-in", "Tìm chuyến bay khác"], handleQuickReply);
+        await UI.addBotMessage(
+          "Thông tin đã xác nhận. Đang chuyển bạn sang web check-in để chọn ghế trực quan...",
+          { stream: false, delay: 120 }
+        );
+        setTimeout(() => openCheckinPage(lastResolvedPNR), 260);
       } else {
         await UI.addBotMessage(
           data?.message || "Tôi chưa tìm thấy PNR hợp lệ. Bạn thử lại mã gồm 6 ký tự nhé.",
@@ -499,6 +952,7 @@
 
           if (eventData.type === "session" && eventData.session_id) {
             backendSessionId = eventData.session_id;
+            localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
           }
 
           if (eventData.type === "chunk") {
@@ -519,8 +973,6 @@
       if (!hasChunk) {
         UI.appendBotStreamChunk(streamRef, "Xin lỗi, tôi chưa có phản hồi phù hợp.");
       }
-
-      await maybePromptRedirectToTicketPage(text);
 
       return true;
     } catch (streamError) {
@@ -546,21 +998,21 @@
         const data = await resp.json();
         if (data.session_id) {
           backendSessionId = data.session_id;
+          localStorage.setItem(STORAGE_KEYS.backendSessionId, backendSessionId);
         }
 
         clearThinkingBubble();
         await UI.addBotMessage(data.answer || "Xin lỗi, tôi chưa có phản hồi phù hợp.", { stream: false, delay: 120 });
-        await maybePromptRedirectToTicketPage(text);
         return true;
       } catch (error) {
-        console.warn("Backend unavailable, fallback to mock flow:", error);
+        console.warn("Backend unavailable:", error);
       }
 
       clearThinkingBubble();
       await UI.addBotMessage(
-        "⚠️ Backend hiện chưa phản hồi, tôi chuyển tạm sang chế độ demo cục bộ để không gián đoạn hỗ trợ nhé."
+        "⚠️ Backend hiện chưa phản hồi nên tôi chưa thể tra cứu dữ liệu thật từ vna_master_seatmap.csv. Bạn vui lòng thử lại sau ít phút nhé."
       );
-      return false;
+      return true;
     }
   }
 
@@ -587,11 +1039,16 @@
             : "";
 
           if (data?.ok) {
+            lastResolvedPNR = (data?.pnr || "").toString().toUpperCase();
             await UI.addBotMessage(`${data.details || "✅ Đã tra cứu thành công."}${extractionNote}`, {
               stream: false,
               delay: 120
             });
-            UI.addQuickReplies(["Tiếp tục check-in", "Nhập mã PNR khác"], handleQuickReply);
+            await UI.addBotMessage(
+              "Đang chuyển bạn sang web check-in để chọn ghế theo sơ đồ máy bay 6 ghế/hàng...",
+              { stream: false, delay: 120 }
+            );
+            setTimeout(() => openCheckinPage(lastResolvedPNR), 260);
             return;
           }
 
@@ -623,34 +1080,30 @@
       const t = option.toLowerCase();
 
       if (t.includes("giá rẻ nhất") || t.includes("rẻ nhất")) {
-        await UI.addBotMessage("Tôi đang sắp xếp theo giá từ thấp đến cao cho bạn...");
-        handleQuickReply("Tìm vé Hà Nội - Đà Nẵng"); // re-trigger with no filters
+        await UI.addBotMessage("Tôi đang ưu tiên chuyến giá thấp nhất theo dữ liệu hiện tại...");
+        processUserMessage("Tìm vé giá rẻ nhất");
       } else if (t.includes("vietnam airlines") || t.includes("vna")) {
-        const state = ChatEngine.flowState;
-        state.class = "any";
-        const results = MockAPI.searchFlights({
-          origin: state.origin || "Hà Nội",
-          destination: state.destination || "Đà Nẵng",
-          date: state.date,
-          cls: "any"
-        }).filter(r => r.airline === "Vietnam Airlines");
-        results.forEach(r => { r.origin = state.origin || "Hà Nội"; r.destination = state.destination || "Đà Nẵng"; });
-        if (results.length) {
-          await UI.addBotMessage(`Đây là ${results.length} chuyến của Vietnam Airlines:`);
-          const el = UI.createFlightResultsContainer(results, (f) => onFlightSelected(f, { adults: 1 }), "");
-          await UI.addElement(el, 200);
+        if (lastResolvedFlightFilters) {
+          await suggestTicketRedirect(
+            lastResolvedFlightFilters,
+            lastResolvedFlightTotal || 0,
+            "Bạn có thể xem ngay danh sách vé Vietnam Airlines theo bộ lọc gần nhất."
+          );
         } else {
-          await UI.addBotMessage("Không có chuyến Vietnam Airlines nào phù hợp trong ngày đó. Thử ngày khác nhé?");
+          processUserMessage("Tìm vé Vietnam Airlines");
         }
       } else if (t.includes("check-in ngay") || t.includes("abc123")) {
-        const booking = MockAPI.lookupPNR("ABC123");
-        await UI.addBotMessage("✅ Check-in thành công! Đây là thẻ lên máy bay của bạn:");
-        const bp = UI.createBoardingPass(MockAPI.doCheckin(booking).boardingPass);
-        await UI.addElement(bp, 400);
+        await UI.addBotMessage("Tôi sẽ tra cứu PNR trực tiếp từ dữ liệu seatmap Vietnam Airlines.");
+        processUserMessage("NHG8IQ");
+      } else if (t.includes("tiếp tục check-in")) {
+        if (lastResolvedPNR) {
+          await UI.addBotMessage("Đang chuyển bạn sang web check-in để chọn ghế.");
+          openCheckinPage(lastResolvedPNR);
+        } else {
+          await UI.addBotMessage("Bạn vui lòng cung cấp mã PNR trước để tôi mở web check-in chính xác.");
+        }
       } else if (t.includes("tìm vé hà nội") || t.includes("hà nội - đà nẵng")) {
-        ChatEngine.reset();
-        ChatEngine.flowState = { origin: "Hà Nội", destination: "Đà Nẵng", date: "2026-04-15" };
-        processUserMessage("Tìm vé Hà Nội Đà Nẵng");
+        processUserMessage("Tìm vé Hà Nội Đà Nẵng ngày 15/04/2026");
       } else if (t.includes("check-in online")) {
         processUserMessage("Tôi muốn check-in online");
       } else if (t.includes("gia đình 4 người") || t.includes("nhóm")) {
@@ -703,26 +1156,37 @@
   async function showPaymentRedirect(flight, totalPrice) {
     document.querySelectorAll(".confirmation-panel").forEach(el => {
       el.querySelector("#btn-confirm").disabled = true;
-      el.querySelector("#btn-confirm").textContent = "Đang chuyển hướng...";
+      el.querySelector("#btn-confirm").textContent = "Đã tạo phương án mở trang vé";
     });
 
-    await UI.addBotMessage(
-      "Tôi đã chuẩn bị xong thông tin đặt chỗ. Bạn sẽ được chuyển đến trang thanh toán bảo mật của Vietnam Airlines để hoàn tất. Tôi không thực hiện thanh toán thay bạn. 🔒"
+    const selectedClass = (flight.cls || flight.class || "economy").toString().toLowerCase();
+    const redirectFilters = {
+      origin: flight.origin || "",
+      destination: flight.destination || "",
+      date: flight.date || null,
+      max_price: Math.round(Number(flight.price) || 0),
+      flight_class: selectedClass,
+      selected_flight: flight.fn || flight.flight_number || "",
+      selected_class: selectedClass,
+    };
+    lastResolvedFlightFilters = redirectFilters;
+    await suggestTicketRedirect(
+      redirectFilters,
+      lastResolvedFlightTotal || 0,
+      "Tôi đã xác nhận đúng thông tin chuyến bay. Bạn có thể tiếp tục bằng nút mở trang chọn vé bên dưới."
     );
-
-    const banner = UI.createPaymentRedirectBanner(flight, totalPrice);
-    await UI.addElement(banner, 400);
-    ChatEngine.reset();
   }
 
   // ===== Upload button in input bar =====
-  uploadTrigger.addEventListener("click", () => {
-    const uploadArea = UI.createFileUpload(handleFileUpload);
-    chatMessages.appendChild(uploadArea);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    ChatEngine.currentFlow = "CHECKIN";
-    ChatEngine.flowState.waitingForPNR = true;
-  });
+  if (uploadTrigger) {
+    uploadTrigger.addEventListener("click", () => {
+      const uploadArea = UI.createFileUpload(handleFileUpload);
+      chatMessages.appendChild(uploadArea);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      ChatEngine.currentFlow = "CHECKIN";
+      ChatEngine.flowState.waitingForPNR = true;
+    });
+  }
 
   // ===== Utility =====
   function getUpcomingDay(dayOfWeek) {
