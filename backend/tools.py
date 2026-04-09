@@ -186,6 +186,7 @@ SEAT_FILE = _first_existing(
     ]
 )
 SEAT_ROWS = _load_csv(SEAT_FILE)
+ACTIVE_FLIGHT_DATA_SOURCE = f"mock_data/{SEAT_FILE.name}"
 
 CHAT_HISTORY_FILE = _first_existing(
     [
@@ -216,6 +217,18 @@ BOOKINGS_BY_PNR = {
     for row in BOOKINGS
     if row.get("pnr")
 }
+
+SEAT_ROWS_BY_PNR: dict[str, list[dict[str, str]]] = {}
+for row in SEAT_ROWS:
+    airline = str(row.get("airline", "")).strip()
+    if not _is_vna_airline(airline):
+        continue
+
+    pnr = str(row.get("pnr", "")).strip().upper()
+    if not pnr:
+        continue
+
+    SEAT_ROWS_BY_PNR.setdefault(pnr, []).append(row)
 
 # Alias demo cũ để không vỡ các input ví dụ legacy.
 PNR_ALIAS_TO_BOOKING = {
@@ -732,6 +745,30 @@ def _find_booking_by_code(code: str) -> tuple[Optional[str], Optional[dict[str, 
     return None, None
 
 
+def _resolve_pnr_in_seatmap(raw_code: str) -> str:
+    normalized_code = raw_code.strip().upper()
+    if not normalized_code:
+        return ""
+
+    if normalized_code in SEAT_ROWS_BY_PNR:
+        return normalized_code
+
+    alias_booking_id = PNR_ALIAS_TO_BOOKING.get(normalized_code)
+    if alias_booking_id and alias_booking_id in BOOKINGS_BY_ID:
+        alias_booking = BOOKINGS_BY_ID[alias_booking_id]
+        pnr = str(alias_booking.get("pnr", "")).strip().upper()
+        if pnr in SEAT_ROWS_BY_PNR:
+            return pnr
+
+    booking_id, booking = _find_booking_by_code(normalized_code)
+    if booking_id and booking:
+        pnr = str(booking.get("pnr", "")).strip().upper()
+        if pnr in SEAT_ROWS_BY_PNR:
+            return pnr
+
+    return normalized_code
+
+
 def _booking_route_info(booking: dict[str, str]) -> dict[str, str]:
     flight_number = str(booking.get("flight_number", "")).upper()
     flight_date = _normalize_date_key(booking.get("flight_date", ""))
@@ -747,87 +784,293 @@ def _booking_route_info(booking: dict[str, str]) -> dict[str, str]:
 
 
 def extract_valid_pnr_from_text(text: str) -> str | None:
-    """Tìm PNR hợp lệ từ đoạn text tự do (ưu tiên pnr trong booking_history.csv)."""
+    """Tìm PNR hợp lệ từ đoạn text tự do (ưu tiên pnr có trong vna_master_seatmap.csv)."""
     normalized = (text or "").upper()
 
     for token in re.findall(r"(?<![A-Z0-9])[A-Z0-9]{6}(?![A-Z0-9])", normalized):
-        if token in BOOKINGS_BY_PNR:
-            return token
-        alias_booking_id = PNR_ALIAS_TO_BOOKING.get(token)
-        if alias_booking_id and alias_booking_id in BOOKINGS_BY_ID:
-            alias_booking = BOOKINGS_BY_ID[alias_booking_id]
-            pnr = str(alias_booking.get("pnr", "")).upper().strip()
-            if pnr:
-                return pnr
+        resolved = _resolve_pnr_in_seatmap(token)
+        if resolved in SEAT_ROWS_BY_PNR:
+            return resolved
 
     for booking_token in re.findall(r"(?<![A-Z0-9])BK[_-]?\d{4}(?![A-Z0-9])", normalized):
-        booking_id, booking = _find_booking_by_code(booking_token)
-        if booking_id and booking:
-            pnr = str(booking.get("pnr", "")).upper().strip()
-            if pnr:
-                return pnr
+        resolved = _resolve_pnr_in_seatmap(booking_token)
+        if resolved in SEAT_ROWS_BY_PNR:
+            return resolved
 
     return None
 
 
-def lookup_pnr_text(pnr_code: str) -> str:
-    code = pnr_code.strip().upper()
-    booking_id, booking = _find_booking_by_code(code)
+def lookup_pnr_record(pnr_code: str) -> dict[str, Any]:
+    raw_code = pnr_code.strip().upper()
+    resolved_code = _resolve_pnr_in_seatmap(raw_code)
+    seat_rows = SEAT_ROWS_BY_PNR.get(resolved_code, [])
 
-    if not booking_id or not booking:
-        sample_pnrs = list(BOOKINGS_BY_PNR.keys())[:3]
+    if not seat_rows:
+        sample_pnrs = list(SEAT_ROWS_BY_PNR.keys())[:3]
         sample_hint = ", ".join(sample_pnrs) if sample_pnrs else "(không có mẫu)"
-        return (
-            f"Không tìm thấy mã '{code}'. Vui lòng kiểm tra lại PNR hoặc mã booking.\n\n"
-            f"💡 Bạn có thể thử PNR mẫu: {sample_hint}"
-        )
+        return {
+            "found": False,
+            "checkin_success": False,
+            "pnr": raw_code,
+            "details": (
+                f"Không tìm thấy mã '{raw_code}' trong dữ liệu check-in Vietnam Airlines. "
+                f"Vui lòng kiểm tra lại PNR hoặc mã booking.\n\n"
+                f"💡 Bạn có thể thử PNR mẫu: {sample_hint}\n"
+                f"📂 Nguồn dữ liệu: `{ACTIVE_FLIGHT_DATA_SOURCE}`"
+            ),
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
 
-    customer_id = booking.get("customer_id", "").upper()
-    customer = CUSTOMERS_BY_ID.get(customer_id, {})
-    flight_number = str(booking.get("flight_number", "")).upper()
-    status = str(booking.get("booking_status", "Unknown"))
-    status_norm = _norm_text(status)
+    available_rows = [row for row in seat_rows if _norm_text(row.get("status", "")) == "available"]
+    selected_row = available_rows[0] if available_rows else seat_rows[0]
 
-    route_info = _booking_route_info(booking)
-    departure = route_info["departure"]
+    flight_number = str(selected_row.get("flight_number", "")).strip().upper() or "--"
+    origin = str(selected_row.get("origin", "")).strip() or "--"
+    destination = str(selected_row.get("destination", "")).strip() or "--"
+    flight_date = _normalize_date_key(selected_row.get("date", "")) or "--"
+    departure = str(selected_row.get("departure", "")).strip() or "--:--"
+    arrival = str(selected_row.get("arrival", "")).strip() or "--:--"
+    seat_no = str(selected_row.get("seat_no", "")).strip() or "--"
+    seat_status = str(selected_row.get("status", "")).strip() or "unknown"
+    ticket_no = str(selected_row.get("ticket_number", "")).strip() or "--"
 
-    boarding = "--:--"
-    if departure and departure != "--:--":
-        try:
-            h, m = [int(part) for part in departure.split(":")]
-            total = h * 60 + m - 40
-            boarding = f"{(total // 60) % 24:02d}:{total % 60:02d}"
-        except Exception:
-            boarding = "--:--"
-
-    passenger_name = customer.get("full_name", "N/A")
-    booking_class = _canonical_class(str(booking.get("class", "economy")))
+    booking_class = _canonical_class(str(selected_row.get("class", "economy")))
     class_label = _class_label(booking_class)
-    pnr_display = str(booking.get("pnr", "")).upper().strip() or code
-    ticket_no = booking.get("ticket_number", "--")
+    can_checkin = len(available_rows) > 0
 
     lines = [
-        f"✅ Tìm thấy đặt chỗ: **{pnr_display}**",
+        f"🔎 Tra cứu PNR: **{resolved_code}**",
         "",
-        f"  🧾 Mã booking: {booking_id}",
-        f"  🎟 Số vé: {ticket_no}",
-        f"  👤 Hành khách: {passenger_name}",
         f"  ✈️ Chuyến bay: {flight_number}",
-        f"  📍 Hành trình: {route_info['origin']} → {route_info['destination']}",
-        f"  📅 Ngày bay: {booking.get('flight_date', '--')}",
-        f"  🕐 Giờ cất cánh dự kiến: {route_info['departure']}",
-        f"  💺 Ghế: {booking.get('seat_no', '--')} · Hạng: {class_label}",
-        f"  ⏰ Giờ lên máy bay gợi ý: {boarding}",
-        f"  📋 Trạng thái: {status}",
+        f"  📍 Hành trình: {origin} → {destination}",
+        f"  📅 Ngày bay: {flight_date}",
+        f"  🕐 Giờ bay: {departure} → {arrival}",
+        f"  💺 Ghế: {seat_no} · Hạng: {class_label}",
+        f"  🎟 Số vé: {ticket_no}",
+        f"  📋 Trạng thái ghế trong seatmap: {seat_status}",
         "",
     ]
 
-    if status_norm in {"cancelled", "canceled"}:
-        lines.append("⚠️ Vé này đang ở trạng thái **Cancelled** nên chưa thể check-in online.")
+    if can_checkin:
+        lines.append(f"✅ Check-in thành công. Ghế còn trống đã được xác nhận: **{seat_no}**.")
     else:
-        lines.append("Bạn có thể tiếp tục check-in online với mã PNR này ngay trong chat.")
+        lines.append(
+            f"⚠️ Không thể check-in: ghế của PNR này hiện là **{seat_status}** (không còn trống trong seatmap)."
+        )
 
-    return "\n".join(lines)
+    lines.append(f"📂 Nguồn dữ liệu: `{ACTIVE_FLIGHT_DATA_SOURCE}`")
+
+    return {
+        "found": True,
+        "checkin_success": can_checkin,
+        "pnr": resolved_code,
+        "details": "\n".join(lines),
+        "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        "seat_status": seat_status,
+    }
+
+
+def lookup_pnr_text(pnr_code: str) -> str:
+    return str(lookup_pnr_record(pnr_code).get("details", ""))
+
+
+SEAT_COLUMNS_ORDER = ["A", "B", "C", "D", "E", "F"]
+
+
+def _parse_seat_position(seat_no: str) -> tuple[int, str]:
+    token = (seat_no or "").strip().upper()
+    match = re.match(r"^(\d+)([A-Z])$", token)
+    if not match:
+        return 10**9, token
+    return int(match.group(1)), match.group(2)
+
+
+def _seat_sort_key(seat: dict[str, Any]) -> tuple[int, int, str]:
+    column = str(seat.get("column", "")).upper()
+    column_index = SEAT_COLUMNS_ORDER.index(column) if column in SEAT_COLUMNS_ORDER else 99
+    return int(seat.get("row", 10**9)), column_index, str(seat.get("seat_no", ""))
+
+
+def build_checkin_seatmap_payload(pnr_code: str) -> dict[str, Any]:
+    raw_code = pnr_code.strip().upper()
+    resolved_code = _resolve_pnr_in_seatmap(raw_code)
+    pnr_rows = SEAT_ROWS_BY_PNR.get(resolved_code, [])
+
+    if not pnr_rows:
+        return {
+            "found": False,
+            "pnr": raw_code,
+            "message": f"Không tìm thấy PNR '{raw_code}' trong dữ liệu check-in hiện tại.",
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
+
+    available_rows = [row for row in pnr_rows if _norm_text(row.get("status", "")) == "available"]
+    representative = available_rows[0] if available_rows else pnr_rows[0]
+
+    flight_number = str(representative.get("flight_number", "")).strip().upper() or "--"
+    flight_date = _normalize_date_key(representative.get("date", "")) or "--"
+    booking_class = _canonical_class(str(representative.get("class", "economy")))
+
+    cabin_rows = [
+        row
+        for row in SEAT_ROWS
+        if str(row.get("flight_number", "")).strip().upper() == flight_number
+        and _normalize_date_key(row.get("date", "")) == flight_date
+        and _canonical_class(str(row.get("class", "economy"))) == booking_class
+        and _is_vna_airline(row.get("airline"))
+    ]
+    if not cabin_rows:
+        cabin_rows = list(pnr_rows)
+
+    seatmap: list[dict[str, Any]] = []
+    selectable_seat_count = 0
+    occupied_by_pnr: list[str] = []
+
+    for row in cabin_rows:
+        seat_no = str(row.get("seat_no", "")).strip().upper()
+        if not seat_no:
+            continue
+
+        row_num, column = _parse_seat_position(seat_no)
+        status = _norm_text(row.get("status", "")) or "unknown"
+        row_pnr = str(row.get("pnr", "")).strip().upper()
+        selectable = status == "available" and row_pnr == resolved_code
+
+        if selectable:
+            selectable_seat_count += 1
+
+        if row_pnr == resolved_code and status != "available":
+            occupied_by_pnr.append(seat_no)
+
+        seatmap.append(
+            {
+                "seat_no": seat_no,
+                "row": row_num,
+                "column": column,
+                "attribute": str(row.get("attribute", "")).strip() or "-",
+                "status": status,
+                "price": _to_int(row.get("seat_price") or row.get("price")),
+                "is_selectable": selectable,
+                "is_user_seat": row_pnr == resolved_code,
+                "pnr": row_pnr,
+            }
+        )
+
+    seatmap.sort(key=_seat_sort_key)
+    occupied_by_pnr.sort(key=lambda item: _parse_seat_position(item))
+
+    current_seat = occupied_by_pnr[0] if occupied_by_pnr else None
+
+    origin = str(representative.get("origin", "")).strip() or "--"
+    destination = str(representative.get("destination", "")).strip() or "--"
+    departure = str(representative.get("departure", "")).strip() or "--:--"
+    arrival = str(representative.get("arrival", "")).strip() or "--:--"
+
+    return {
+        "found": True,
+        "pnr": resolved_code,
+        "checkin_success": bool(available_rows),
+        "flight_number": flight_number,
+        "date": flight_date,
+        "origin": origin,
+        "destination": destination,
+        "departure": departure,
+        "arrival": arrival,
+        "booking_class": booking_class,
+        "booking_class_label": _class_label(booking_class),
+        "current_seat": current_seat,
+        "selectable_seat_count": selectable_seat_count,
+        "seatmap": seatmap,
+        "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+    }
+
+
+def confirm_checkin_seat_selection(pnr_code: str, seat_no: str) -> dict[str, Any]:
+    raw_code = pnr_code.strip().upper()
+    resolved_code = _resolve_pnr_in_seatmap(raw_code)
+    target_seat = (seat_no or "").strip().upper()
+
+    pnr_rows = SEAT_ROWS_BY_PNR.get(resolved_code, [])
+    if not pnr_rows:
+        return {
+            "ok": False,
+            "found": False,
+            "pnr": raw_code,
+            "message": f"Không tìm thấy PNR '{raw_code}' trong dữ liệu check-in hiện tại.",
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
+
+    if not target_seat:
+        return {
+            "ok": False,
+            "found": True,
+            "pnr": resolved_code,
+            "message": "Vui lòng chọn số ghế trước khi xác nhận check-in.",
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
+
+    row_by_seat: dict[str, dict[str, str]] = {
+        str(row.get("seat_no", "")).strip().upper(): row for row in pnr_rows if row.get("seat_no")
+    }
+    selected = row_by_seat.get(target_seat)
+
+    if not selected:
+        available_options = sorted(
+            [
+                str(row.get("seat_no", "")).strip().upper()
+                for row in pnr_rows
+                if _norm_text(row.get("status", "")) == "available"
+            ],
+            key=lambda item: _parse_seat_position(item),
+        )
+        hint = ", ".join(available_options[:12]) if available_options else "(không còn ghế trống)"
+        return {
+            "ok": False,
+            "found": True,
+            "pnr": resolved_code,
+            "message": (
+                f"Ghế {target_seat} không thuộc danh sách ghế khả dụng cho PNR {resolved_code}. "
+                f"Bạn có thể chọn: {hint}."
+            ),
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
+
+    status = _norm_text(selected.get("status", ""))
+    if status != "available":
+        return {
+            "ok": False,
+            "found": True,
+            "pnr": resolved_code,
+            "message": f"Ghế {target_seat} hiện không còn trống (status={status or 'unknown'}).",
+            "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+        }
+
+    flight_number = str(selected.get("flight_number", "")).strip().upper() or "--"
+    origin = str(selected.get("origin", "")).strip() or "--"
+    destination = str(selected.get("destination", "")).strip() or "--"
+    departure = str(selected.get("departure", "")).strip() or "--:--"
+    arrival = str(selected.get("arrival", "")).strip() or "--:--"
+    flight_date = _normalize_date_key(selected.get("date", "")) or "--"
+    booking_class = _class_label(_canonical_class(str(selected.get("class", "economy"))))
+
+    return {
+        "ok": True,
+        "found": True,
+        "pnr": resolved_code,
+        "selected_seat": target_seat,
+        "flight_number": flight_number,
+        "origin": origin,
+        "destination": destination,
+        "departure": departure,
+        "arrival": arrival,
+        "date": flight_date,
+        "booking_class_label": booking_class,
+        "message": (
+            f"✅ Check-in thành công cho PNR {resolved_code}. "
+            f"Bạn đã chọn ghế {target_seat} trên chuyến {flight_number} ({origin} → {destination}, {departure} → {arrival})."
+        ),
+        "source_file": ACTIVE_FLIGHT_DATA_SOURCE,
+    }
 
 
 def _route_key_from_booking(booking: dict[str, str]) -> str:
@@ -1104,7 +1347,7 @@ def calc_fee(
 
 @tool
 def lookup_pnr(pnr_code: str) -> str:
-    """Tra cứu đặt chỗ/check-in bằng PNR thực tế (6 ký tự) hoặc mã booking (BK_1001)."""
+    """Tra cứu/check-in theo PNR dựa trên dữ liệu vna_master_seatmap.csv."""
     return lookup_pnr_text(pnr_code)
 
 

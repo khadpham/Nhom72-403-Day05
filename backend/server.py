@@ -3,13 +3,15 @@ from __future__ import annotations
 import json
 import io
 import re
+import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, SystemMessage
@@ -17,10 +19,13 @@ from pydantic import BaseModel, Field
 
 from agent import AgentState, build_graph, initial_state, run_turn
 from tools import (
+    ACTIVE_FLIGHT_DATA_SOURCE,
+    build_checkin_seatmap_payload,
+    confirm_checkin_seat_selection,
     extract_valid_pnr_from_text,
     get_customer_history_summary,
     infer_search_filters_from_text,
-    lookup_pnr_text,
+    lookup_pnr_record,
     search_flight_records,
 )
 
@@ -34,7 +39,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 CHAT_LOG_FILE = LOG_DIR / "chat_history.jsonl"
-MAX_UI_ANSWER_CHARS = 1800
+FEEDBACK_DB_FILE = LOG_DIR / "service_feedback.db"
+FEEDBACK_DB_LOCK = Lock()
+MAX_UI_ANSWER_CHARS = 900
 THINKING_BLOCK_PATTERN = re.compile(r"<\s*(think|thinking)\s*>.*?<\s*/\s*(think|thinking)\s*>", re.IGNORECASE | re.DOTALL)
 THINKING_LINE_PATTERN = re.compile(r"^\s*(thought|reasoning|analysis|scratchpad)\s*:", re.IGNORECASE)
 CYRILLIC_TOKEN_PATTERN = re.compile(r"[А-Яа-яЁё]+")
@@ -90,9 +97,27 @@ class CheckinPNRRequest(BaseModel):
     pnr_code: str = Field(min_length=4)
 
 
+class CheckinSeatmapRequest(BaseModel):
+    pnr_code: str = Field(min_length=4)
+
+
+class CheckinSelectSeatRequest(BaseModel):
+    pnr_code: str = Field(min_length=4)
+    seat_no: str = Field(min_length=2)
+
+
 class SessionBindRequest(BaseModel):
     user_id: str = Field(min_length=1)
     session_id: str | None = None
+
+
+class FeedbackRequest(BaseModel):
+    rating: str = Field(min_length=1)
+    trigger_event: str = Field(min_length=1, max_length=100)
+    session_id: str | None = None
+    user_id: str | None = None
+    improvement_note: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 def _utc_now() -> str:
@@ -301,6 +326,80 @@ def _append_chat_log(payload: dict[str, Any]) -> None:
         file.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def _init_feedback_db() -> None:
+    with FEEDBACK_DB_LOCK:
+        with sqlite3.connect(FEEDBACK_DB_FILE) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS service_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_at TEXT NOT NULL,
+                    session_id TEXT,
+                    user_id TEXT,
+                    trigger_event TEXT NOT NULL,
+                    rating TEXT NOT NULL,
+                    improvement_note TEXT,
+                    metadata_json TEXT
+                )
+                """
+            )
+            conn.commit()
+
+
+def _normalize_feedback_rating(raw_rating: str) -> str:
+    normalized = (raw_rating or "").strip().lower()
+    mapping = {
+        "tot": "tot",
+        "tốt": "tot",
+        "good": "tot",
+        "on": "on",
+        "ổn": "on",
+        "ok": "on",
+        "chua_tot": "chua_tot",
+        "chưa tốt": "chua_tot",
+        "chua tot": "chua_tot",
+        "not_good": "chua_tot",
+        "te": "te",
+        "tệ": "te",
+        "bad": "te",
+    }
+    return mapping.get(normalized, "")
+
+
+def _insert_feedback_record(
+    session_id: str | None,
+    user_id: str | None,
+    trigger_event: str,
+    rating: str,
+    improvement_note: str | None,
+    metadata: dict[str, Any] | None,
+) -> int:
+    with FEEDBACK_DB_LOCK:
+        with sqlite3.connect(FEEDBACK_DB_FILE) as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO service_feedback (
+                    created_at, session_id, user_id, trigger_event, rating, improvement_note, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    _utc_now(),
+                    (session_id or "").strip() or None,
+                    _normalize_user_id(user_id),
+                    trigger_event,
+                    rating,
+                    (improvement_note or "").strip() or None,
+                    json.dumps(metadata or {}, ensure_ascii=False),
+                ),
+            )
+            conn.commit()
+            inserted_id = cursor.lastrowid
+            return int(inserted_id) if inserted_id is not None else 0
+
+
+_init_feedback_db()
+
+
 def _extract_text_from_pdf_bytes(content: bytes, max_pages: int = 5) -> str:
     if not content or PdfReader is None:
         return ""
@@ -407,6 +506,7 @@ def search_flights_endpoint(request: FlightSearchRequest) -> dict[str, Any]:
         "filters": request.model_dump(),
         "total": len(flights),
         "flights": flights,
+        "data_source": ACTIVE_FLIGHT_DATA_SOURCE,
     }
 
 
@@ -422,6 +522,7 @@ def search_flights_from_text(request: FlightSearchFromTextRequest) -> dict[str, 
             "filters": filters,
             "total": 0,
             "flights": [],
+            "data_source": ACTIVE_FLIGHT_DATA_SOURCE,
         }
 
     flights = search_flight_records(
@@ -440,6 +541,7 @@ def search_flights_from_text(request: FlightSearchFromTextRequest) -> dict[str, 
         "filters": filters,
         "total": len(flights),
         "flights": flights,
+        "data_source": ACTIVE_FLIGHT_DATA_SOURCE,
     }
 
 
@@ -467,17 +569,71 @@ def bind_user_to_session(request: SessionBindRequest) -> dict[str, Any]:
 
 @APP.post("/api/checkin/pnr")
 def checkin_by_pnr(request: CheckinPNRRequest) -> dict[str, Any]:
-    candidate = extract_valid_pnr_from_text(request.pnr_code)
-    if not candidate:
+    candidate = extract_valid_pnr_from_text(request.pnr_code) or request.pnr_code.strip().upper()
+    result = lookup_pnr_record(candidate)
+
+    if not result.get("found"):
         return {
             "ok": False,
-            "message": "Không tìm thấy PNR hợp lệ trong dữ liệu hiện tại.",
+            "checkin_success": False,
+            "message": result.get("details", "Không tìm thấy PNR hợp lệ trong dữ liệu hiện tại."),
+            "data_source": result.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
         }
 
+    checkin_success = bool(result.get("checkin_success"))
+    details = str(result.get("details", ""))
+    return {
+        "ok": checkin_success,
+        "checkin_success": checkin_success,
+        "pnr": result.get("pnr", candidate),
+        "details": details,
+        "message": None if checkin_success else details,
+        "data_source": result.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
+    }
+
+
+@APP.post("/api/checkin/seatmap")
+def checkin_seatmap(request: CheckinSeatmapRequest) -> dict[str, Any]:
+    candidate = extract_valid_pnr_from_text(request.pnr_code) or request.pnr_code.strip().upper()
+    payload = build_checkin_seatmap_payload(candidate)
+
+    if not payload.get("found"):
+        return {
+            "ok": False,
+            "found": False,
+            "pnr": payload.get("pnr", candidate),
+            "message": payload.get("message", "Không tìm thấy PNR trong dữ liệu hiện tại."),
+            "data_source": payload.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
+        }
+
+    checkin_success = bool(payload.get("checkin_success"))
     return {
         "ok": True,
-        "pnr": candidate,
-        "details": lookup_pnr_text(candidate),
+        "found": True,
+        "checkin_success": checkin_success,
+        "message": (
+            "PNR hợp lệ và có thể chọn ghế check-in."
+            if checkin_success
+            else "PNR hợp lệ nhưng hiện không còn ghế trống để check-in."
+        ),
+        "data_source": payload.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
+        **payload,
+    }
+
+
+@APP.post("/api/checkin/select-seat")
+def checkin_select_seat(request: CheckinSelectSeatRequest) -> dict[str, Any]:
+    candidate = extract_valid_pnr_from_text(request.pnr_code) or request.pnr_code.strip().upper()
+    result = confirm_checkin_seat_selection(candidate, request.seat_no)
+
+    return {
+        "ok": bool(result.get("ok")),
+        "found": bool(result.get("found", False)),
+        "pnr": result.get("pnr", candidate),
+        "selected_seat": result.get("selected_seat"),
+        "message": result.get("message", "Không thể xác nhận chọn ghế."),
+        "data_source": result.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
+        **result,
     }
 
 
@@ -500,6 +656,7 @@ async def checkin_from_upload(file: UploadFile = File(...)) -> dict[str, Any]:
     if not candidate:
         return {
             "ok": False,
+            "checkin_success": False,
             "message": (
                 "Không trích xuất được PNR hợp lệ từ file. "
                 "Vui lòng nhập trực tiếp mã PNR (6 ký tự) hoặc mã booking BK_xxxx."
@@ -508,16 +665,36 @@ async def checkin_from_upload(file: UploadFile = File(...)) -> dict[str, Any]:
             "extraction_method": extraction_method,
             "api_cost": "0 (local parsing)",
             "pdf_parser_available": PdfReader is not None,
+            "data_source": ACTIVE_FLIGHT_DATA_SOURCE,
         }
 
+    result = lookup_pnr_record(candidate)
+    if not result.get("found"):
+        return {
+            "ok": False,
+            "checkin_success": False,
+            "message": result.get("details", "Không tìm thấy PNR hợp lệ trong dữ liệu hiện tại."),
+            "filename": filename,
+            "extraction_method": extraction_method,
+            "api_cost": "0 (local parsing)",
+            "pdf_parser_available": PdfReader is not None,
+            "data_source": result.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
+        }
+
+    checkin_success = bool(result.get("checkin_success"))
+    details = str(result.get("details", ""))
+
     return {
-        "ok": True,
-        "pnr": candidate,
-        "details": lookup_pnr_text(candidate),
+        "ok": checkin_success,
+        "checkin_success": checkin_success,
+        "pnr": result.get("pnr", candidate),
+        "details": details,
+        "message": None if checkin_success else details,
         "filename": filename,
         "extraction_method": extraction_method,
         "api_cost": "0 (local parsing)",
         "pdf_parser_available": PdfReader is not None,
+        "data_source": result.get("source_file", ACTIVE_FLIGHT_DATA_SOURCE),
     }
 
 
@@ -535,3 +712,37 @@ def clear_history(session_id: str) -> dict[str, Any]:
     SESSION_LANGUAGE.pop(session_id, None)
     SESSION_PROFILE_USER.pop(session_id, None)
     return {"session_id": session_id, "removed": removed}
+
+
+@APP.post("/api/feedback")
+def submit_service_feedback(request: FeedbackRequest) -> dict[str, Any]:
+    rating = _normalize_feedback_rating(request.rating)
+    if not rating:
+        raise HTTPException(status_code=422, detail="Rating không hợp lệ. Hãy dùng: Tốt, Ổn, Chưa tốt, Tệ.")
+
+    trigger_event = (request.trigger_event or "").strip()
+    if not trigger_event:
+        raise HTTPException(status_code=422, detail="Thiếu trigger_event cho bản ghi đánh giá.")
+
+    improvement_note = (request.improvement_note or "").strip()
+    if rating in {"chua_tot", "te"} and not improvement_note:
+        raise HTTPException(
+            status_code=400,
+            detail="Với đánh giá 'Chưa tốt' hoặc 'Tệ', vui lòng bổ sung ý kiến cải thiện.",
+        )
+
+    feedback_id = _insert_feedback_record(
+        session_id=request.session_id,
+        user_id=request.user_id,
+        trigger_event=trigger_event,
+        rating=rating,
+        improvement_note=improvement_note,
+        metadata=request.metadata,
+    )
+
+    return {
+        "ok": True,
+        "feedback_id": feedback_id,
+        "rating": rating,
+        "saved_to": str(FEEDBACK_DB_FILE.relative_to(BASE_DIR)).replace("\\", "/"),
+    }
