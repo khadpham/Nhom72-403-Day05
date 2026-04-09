@@ -3,34 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Danh sách vé đầy đủ | NEO Vietnam Airlines</title>
+  <title>Chọn vé | NEO Vietnam Airlines</title>
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body class="tickets-page-body">
-  <div class="tickets-page">
-    <header class="tickets-header">
+  <div id="proactive-container"></div>
+
+  <div class="tickets-page-shell">
+    <header class="tickets-page-header">
       <div class="ticket-nav-row">
-        <button class="back-home-btn" id="back-home-btn">← Quay lại trang chat</button>
+        <button class="back-home-btn" id="back-home-btn">← Quay lại NEO Chat</button>
       </div>
-      <h1>Danh sách vé đầy đủ theo bộ lọc</h1>
-      <p id="filters-summary">Đang tải bộ lọc...</p>
+
+      <div class="tickets-route-line">
+        <h1>Chọn chuyến bay phù hợp</h1>
+        <p id="filters-summary">Đang tải bộ lọc hành trình...</p>
+      </div>
+
+      <div class="tickets-toolbar">
+        <button class="tickets-filter-btn" id="toggle-filters-btn">⚙ HIỂN THỊ BỘ LỌC</button>
+        <div class="tickets-toolbar-tags">
+          <button class="sort-chip" data-sort="cheapest">Giá vé rẻ nhất</button>
+          <button class="sort-chip" data-sort="shortest">Thời gian nối chuyến dưới 2 giờ ⏱</button>
+        </div>
+        <label class="tickets-sort-wrap">
+          Sắp xếp theo
+          <select id="sort-select">
+            <option value="default">Mặc định</option>
+            <option value="cheapest">Giá thấp nhất</option>
+            <option value="earliest">Khởi hành sớm nhất</option>
+            <option value="shortest">Thời lượng ngắn nhất</option>
+          </select>
+        </label>
+      </div>
+
+      <section id="filters-panel" class="tickets-filter-panel" style="display:none">
+        <div class="tickets-filter-grid" id="filters-panel-content"></div>
+      </section>
     </header>
 
     <section class="tickets-layout">
       <div class="tickets-list-panel">
-        <div id="tickets-count" class="results-header">Đang tải dữ liệu chuyến bay...</div>
-        <div id="tickets-list" class="flight-cards-list"></div>
+        <div id="tickets-count" class="results-header">Đang tải dữ liệu chuyến bay Vietnam Airlines...</div>
+        <p class="tickets-note">
+          ℹ Các chuyến bay hiển thị theo dữ liệu trong dataset mock_data. Bạn có thể chọn hạng ghế trực tiếp trên từng chuyến.
+        </p>
+
+        <div id="tickets-list" class="tickets-vna-list"></div>
         <div id="tickets-empty" class="ticket-empty" style="display:none"></div>
       </div>
 
       <aside class="tickets-selected-panel" id="selected-panel">
-        <h3>Chọn chuyến để thanh toán thủ công</h3>
+        <h3>Tóm tắt lựa chọn</h3>
+        <p class="tickets-selected-help">
+          Sau khi chọn một mức giá (hạng ghế), bạn có thể tiếp tục sang trang thanh toán chính thức.
+        </p>
+        <div class="ticket-datasource" id="ticket-datasource">Nguồn dữ liệu: đang tải...</div>
         <p id="selected-empty" class="ticket-empty" style="padding:0">Bạn chưa chọn chuyến bay nào.</p>
         <div id="selected-content" style="display:none"></div>
       </aside>
     </section>
   </div>
 
+  <!-- ===================================================
+       SHARED CHAT WIDGET (keeps conversation across pages)
+  =================================================== -->
+  <button id="chat-toggle" aria-label="Mở chat với NEO">
+    💬
+  </button>
+
+  <div id="chat-widget" role="dialog" aria-label="Chat với NEO" aria-live="polite">
+    <div class="chat-header">
+      <div class="chat-header-avatar" aria-hidden="true">🤖</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name">NEO – Trợ lý Vietnam Airlines</div>
+        <div class="chat-header-status">Đang hoạt động 24/7</div>
+      </div>
+      <div class="chat-header-actions">
+        <button class="header-btn" id="chat-clear" aria-label="Xóa lịch sử chat" title="Xóa lịch sử chat">🗑</button>
+        <button class="header-btn" id="chat-minimize" aria-label="Thu nhỏ">–</button>
+        <button class="header-btn" id="chat-close" aria-label="Đóng chat">×</button>
+      </div>
+    </div>
+
+    <div id="chat-messages" role="log" aria-label="Lịch sử hội thoại">
+      <div id="typing-indicator" aria-label="NEO đang nhập" style="display:none">
+        <div class="typing-avatar" aria-hidden="true">🤖</div>
+        <div class="typing-dots" role="status">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="input-row">
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="Nhập câu hỏi của bạn..."
+          autocomplete="off"
+          aria-label="Nhập tin nhắn"
+          maxlength="500"
+        />
+        <div class="input-actions">
+          <button class="input-action-btn" id="upload-trigger" title="Upload file PDF/ảnh" aria-label="Upload file">📎</button>
+          <button id="send-btn" aria-label="Gửi tin nhắn">➤</button>
+        </div>
+      </div>
+      <div class="chat-disclaimer">
+        NEO có thể sai sót, hãy kiểm tra thông tin quan trọng.
+      </div>
+    </div>
+  </div>
+
+  <script src="js/mock-api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/app.js"></script>
   <script src="js/tickets.js"></script>
 </body>
 </html>
